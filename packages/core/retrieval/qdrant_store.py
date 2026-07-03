@@ -82,13 +82,25 @@ class QdrantStore:
         return len(points)
 
     def search(self, vector: list[float], top_k: int, filters: dict | None = None) -> list[RetrievalHit]:
-        hits = self.client.search(
-            collection_name=self.s.qdrant_collection,
-            query_vector=vector,
-            limit=top_k,
-            query_filter=_to_filter(filters),
-            with_payload=True,
-        )
+        query_filter = _to_filter(filters)
+        if hasattr(self.client, "search"):
+            hits = self.client.search(
+                collection_name=self.s.qdrant_collection,
+                query_vector=vector,
+                limit=top_k,
+                query_filter=query_filter,
+                with_payload=True,
+            )
+        else:
+            # qdrant-client >=1.18 replaced search() with query_points().
+            response = self.client.query_points(
+                collection_name=self.s.qdrant_collection,
+                query=vector,
+                limit=top_k,
+                query_filter=query_filter,
+                with_payload=True,
+            )
+            hits = getattr(response, "points", response)
         out: list[RetrievalHit] = []
         for p in hits:
             payload = p.payload or {}
