@@ -1,0 +1,17 @@
+python: 3.12.10
+platform: Windows-11-10.0.26200-SP0
+generated_at: 2026-07-04T03:37:27+08:00
+llm_provider_effective: offline
+llm_model: gpt-4o-mini
+
+packages:
+fastapi==0.139.0
+uvicorn==0.49.0
+qdrant-client==1.18.0
+sentence-transformers==5.6.0
+docling==2.109.0
+pdfplumber==0.11.10
+pymupdf=NOT INSTALLED
+pydantic==2.13.4
+httpx==0.28.1
+tiktoken==0.13.0

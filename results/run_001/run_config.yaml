@@ -1,0 +1,11 @@
+# Run config for benchmark at 2026-07-04T03:37:27+08:00
+llm_provider: offline
+llm_model: gpt-4o-mini
+llm_temperature: 0.0
+embedding_model: BAAI/bge-small-en-v1.5
+embedding_dim: 384
+chunk_size: 700
+chunk_overlap: 120
+top_k: 8
+abstention_threshold: 0.35
+qdrant_collection: evidenceos_chunks
