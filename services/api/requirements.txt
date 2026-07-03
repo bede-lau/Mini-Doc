@@ -1,0 +1,35 @@
+# EvidenceOS Mini — backend dependencies (Python 3.11–3.12 recommended).
+# Install: pip install -r services/api/requirements.txt
+
+# Web framework
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9   # file uploads
+
+# Config / validation
+pydantic>=2.7
+pydantic-settings>=2.3
+
+# Parsing
+pdfplumber>=0.11          # baseline parser (text + tables)
+docling>=2.25             # structured parser (layout, tables, OCR pipeline)
+# Optional OCR fallback for scanned forms:
+# pytesseract>=0.3.10
+# pdf2image>=1.17   (also requires the Tesseract binary on PATH)
+
+# Embeddings + vector store
+sentence-transformers>=3.0
+qdrant-client>=1.11
+
+# HTTP (for the LLM adapter over the OpenAI/Anthropic REST APIs)
+httpx>=0.27
+
+# Token counting (optional but improves chunk sizing accuracy)
+tiktoken>=0.7
+
+# YAML for benchmark config (stdlib-free repo otherwise)
+PyYAML>=6.0
+
+# --- Optional LLM-as-judge evaluation (deterministic metrics work without these) ---
+# ragas>=0.2
+# deepeval>=1.5

@@ -1,0 +1,60 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# --- Virtual envs ---
+.venv/
+venv/
+env/
+
+# --- Secrets / local config ---
+.env
+.env.*.local
+
+# --- Downloaded / generated artifacts (regenerable; keep .gitkeep markers) ---
+data/raw_docs/*
+!data/raw_docs/.gitkeep
+data/parsed/*
+!data/parsed/.gitkeep
+data/chunks/*
+!data/chunks/.gitkeep
+data/vector_store/
+# HF / SentenceTransformers model cache
+models/
+*.bin
+*.safetensors
+
+# Benchmark runs: commit run_001 explicitly (see benchmark README). Ignore ad-hoc runs.
+results/run_002/
+results/run_*/
+!results/.gitkeep
+
+# --- Node / Next.js ---
+node_modules/
+.next/
+out/
+.turbo/
+apps/web/.next/
+apps/web/node_modules/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# --- Tooling / agent state (not part of the deliverable) ---
+.omc/
+.claude/
+

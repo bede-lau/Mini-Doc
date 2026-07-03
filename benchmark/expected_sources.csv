@@ -1,0 +1,31 @@
+question_id,expected_document,expected_page_start,expected_page_end,expected_evidence_snippet
+Q001,,,,lawful basis for processing personal data
+Q002,,,,large accelerated filer Form 10-K deadline
+Q003,,,,JPMorgan Chase net interest income 2024
+Q004,,,,Apple Scope 3 greenhouse gas emissions
+Q005,,,,Fifth Anti-Money Laundering Directive occasional transaction threshold
+Q006,dbs-annual-report-2025.pdf,,,Net profit attributable to shareholders
+Q007,dbs-annual-report-2025.pdf,,,Total assets
+Q008,ocbc-annual-report-2025.pdf,,,Net interest income
+Q009,ocbc-annual-report-2025.pdf,,,Total equity attributable to equity holders
+Q010,uob-annual-report-2025.pdf,,,Net profit attributable to ordinary shareholders
+Q011,mas-trm-guidelines-2021.pdf,,,Board of Directors
+Q012,mas-trm-guidelines-2021.pdf,,,at least annually
+Q013,mas-trm-guidelines-2021.pdf,,,patch management
+Q014,mas-notice-sfa04-n02-2025.pdf,,,at least five years
+Q015,mas-notice-sfa04-n02-2025.pdf,,,must not establish
+Q016,guidelines-to-mas-notice-626-2025.pdf,,,lower degree of risk
+Q017,guidelines-to-mas-notice-626-2025.pdf,,,not legally binding
+Q018,mas-trm-guidelines-2021.pdf,,,strong encryption
+Q019,nfip-claims-manual-june-2025.pdf,,,within 60 days after the loss
+Q020,sfip-commentary-june-2025.pdf,,,general and temporary condition of partial or complete inundation
+Q021,sfip-commentary-june-2025.pdf,,,located in a basement
+Q022,sfip-commentary-june-2025.pdf,,,additional living expenses
+Q023,nfip-claims-manual-june-2025.pdf,,,supporting documentation
+Q024,nfip-claims-manual-june-2025.pdf,,,within one year after the date of the written denial
+Q025,acra-registrable-controllers-guidance-2025.pdf,,,more than 25% of the total number of shares
+Q026,acra-registrable-controllers-guidance-2025.pdf,,,significant influence or control
+Q027,acra-registrable-controllers-guidance-2025.pdf,,,within 2 business days
+Q028,acra-registrable-controllers-guidance-2025.pdf,,,give notice to any person
+Q029,acra-registrable-controllers-guidance-2025.pdf,,,composition sum
+Q030,acra-registrable-controllers-guidance-2025.pdf,,,the nominator

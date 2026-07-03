@@ -1,0 +1,65 @@
+# Benchmark scoring configuration.
+# Consumed by scripts/run_benchmark.py via packages/core/evaluation.
+# Deterministic metrics are always computed. Manual metrics are left blank for a
+# human to fill after inspecting raw_outputs.jsonl. Optional LLM-as-judge metrics
+# require ragas/deepeval and an API key.
+
+retrieval:
+  top_k: 8                 # mirrors settings.top_k
+  metrics:
+    - hit_at_1             # expected source is the top chunk (0/1)
+    - recall_at_3          # expected source in top 3 (0/1)
+    - recall_at_5          # expected source in top 5 (0/1)
+    - mrr                  # reciprocal rank of first correct chunk
+    - citation_page_match  # cited chunk is in expected doc + page band (0/1)
+
+answer_and_citation:
+  deterministic:
+    - answer_type          # supported | insufficient_evidence | conflicting_evidence
+    - abstention_correctness
+    - unsupported_claim_count   # claims absent from retrieved chunks (hallucination proxy)
+  manual:
+    manual_answer_correctness:  # 0 / 0.5 / 1
+      scale:
+        1: "materially correct"
+        0.5: "partially correct but incomplete"
+        0: "wrong or unsupported"
+    manual_citation_support:     # 0 / 0.5 / 1
+      scale:
+        1: "cited source directly supports the claim"
+        0.5: "related but incomplete support"
+        0: "citation does not support claim"
+  optional_llm_as_judge:        # require API key + ragas/deepeval
+    - faithfulness
+    - contextual_relevancy
+    - answer_relevancy
+
+parser:
+  metrics:
+    - parse_success_rate
+    - empty_page_rate
+    - avg_latency_seconds_per_page
+    - crash_count
+  manual:
+    manual_table_score:         # 0 / 1 / 2
+      scale:
+        2: "table structure mostly preserved"
+        1: "table partially usable"
+        0: "table lost / unusable"
+    manual_reading_order_score: # 0 / 1 / 2
+      scale:
+        2: "mostly correct order"
+        1: "understandable but flawed"
+        0: "order badly broken"
+
+report:
+  metrics:
+    - required_sections_present
+    - evidence_table_present
+    - unsupported_claim_count
+    - missing_info_section_present
+    - risk_flags_grounded        # manual 0/0.5/1
+    - professional_format_score  # manual 0/1/2
+
+abstention:
+  threshold: 0.35            # cosine below this => insufficient_evidence (mirrors settings)

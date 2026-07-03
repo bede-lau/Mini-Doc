@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background-color: theme("colors.paper");
+  color: theme("colors.ink");
+}
+
+/* Data + identifiers read in monospace; keeps hashes, scores, IDs scannable. */
+.mono {
+  font-family: theme("fontFamily.mono");
+  font-variant-numeric: tabular-nums;
+}
