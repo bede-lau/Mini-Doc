@@ -175,10 +175,23 @@ Questions are never edited after results are seen; changes go into a new
 
 ## 12. Result summary
 
-> _Fill after running_: `results/run_001/summary.md` reports `hit_at_1`,
-> `recall_at_3/5`, `MRR`, `citation_page_match`, `abstention_correctness`, and the
-> unsupported-claim proxy. Because the default answer mode is deterministic
-> extractive grounding, scores are stable across machines and runs.
+`results/run_001/summary.md` was generated on 2026-07-04 with deterministic
+offline extractive grounding:
+
+| Metric | Value |
+|---|---:|
+| Questions | 30 |
+| hit_at_1 | 0.6000 |
+| recall_at_3 | 0.7333 |
+| recall_at_5 | 0.7667 |
+| MRR | 0.6750 |
+| citation_page_match | 0.7000 |
+| abstention_correctness | 0.8667 |
+| insufficient_evidence answers | 1 |
+| unsupported_claim_total (proxy) | 0 |
+
+Manual answer/citation/table/read-order scores are intentionally blank until a
+human reviewer fills the manual columns in `results/run_001/*.csv`.
 
 ## 13. Failure analysis
 

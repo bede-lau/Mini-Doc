@@ -56,5 +56,5 @@ Thumbs.db
 
 # --- Tooling / agent state (not part of the deliverable) ---
 .omc/
+.omx/
 .claude/
-
