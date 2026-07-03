@@ -37,6 +37,20 @@ _LABEL_MAP: dict[str, ChunkType] = {
 _SKIP_LABELS = {"page_header", "page_footer", "header", "footer"}
 
 
+def _unwrap_item(raw):
+    """Docling 2.x may yield either item or (item, level) from iterate_items."""
+    if isinstance(raw, (tuple, list)) and raw:
+        return raw[0]
+    return raw
+
+
+def _label_value(item) -> str:
+    """Return a stable lower-case label from Docling enum/string labels."""
+    label = getattr(item, "label", "") or ""
+    label = getattr(label, "value", label)
+    return str(label).lower().strip()
+
+
 def _first_page(item) -> int:
     """Best-effort page number (1-indexed) from a Docling item's provenance."""
     prov = getattr(item, "prov", None)
@@ -66,6 +80,27 @@ def _item_text(item) -> str:
         if val and str(val).strip():
             return str(val).strip()
     return ""
+
+
+def _page_count(doc, seen_pages: set[int]) -> int:
+    num_pages = getattr(doc, "num_pages", None)
+    if callable(num_pages):
+        try:
+            return int(num_pages() or 0)
+        except Exception:
+            pass
+    if num_pages:
+        try:
+            return int(num_pages)
+        except Exception:
+            pass
+    pages = getattr(doc, "pages", None)
+    if pages is not None:
+        try:
+            return len(pages)
+        except Exception:
+            pass
+    return max(seen_pages) if seen_pages else 0
 
 
 class DoclingParser(ParserAdapter):
@@ -100,8 +135,9 @@ class DoclingParser(ParserAdapter):
                 errors=["docling: no iterate_items API on document"],
             )
 
-        for item in iterate():
-            label = str(getattr(item, "label", "") or "").lower().strip()
+        for raw_item in iterate():
+            item = _unwrap_item(raw_item)
+            label = _label_value(item)
             page = _first_page(item) or last_page
             last_page = page
             seen_pages.add(page)
@@ -138,7 +174,7 @@ class DoclingParser(ParserAdapter):
                 )
             )
 
-        page_count = max(seen_pages) if seen_pages else int(getattr(doc, "num_pages", 0) or 0)
+        page_count = _page_count(doc, seen_pages)
 
         # Crude empty-page detection: pages in range with no elements.
         if page_count:
