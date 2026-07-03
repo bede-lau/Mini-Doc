@@ -28,6 +28,7 @@ data/parsed/*
 !data/parsed/.gitkeep
 data/chunks/*
 !data/chunks/.gitkeep
+data/registry.json
 data/vector_store/
 # HF / SentenceTransformers model cache
 models/
