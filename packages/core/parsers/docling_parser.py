@@ -111,10 +111,25 @@ class DoclingParser(ParserAdapter):
 
     def _converter_obj(self):
         if self._converter is None:
+            from docling.datamodel.base_models import InputFormat
+            from docling.datamodel.pipeline_options import PdfPipelineOptions
             from docling.document_converter import DocumentConverter
+            from docling.document_converter import PdfFormatOption
 
-            # Default pipeline. OCR models download on first use; see MANUAL_TASKS.
-            self._converter = DocumentConverter()
+            # Use Docling's structured PDF parser, but keep the local demo path
+            # lightweight and deterministic. The public PDFs contain embedded
+            # text; enabling OCR on large annual reports can exhaust memory on
+            # Windows CPU-only runs before yielding any chunks.
+            opts = PdfPipelineOptions()
+            opts.do_ocr = False
+            opts.ocr_batch_size = 1
+            opts.layout_batch_size = 1
+            opts.table_batch_size = 1
+            self._converter = DocumentConverter(
+                format_options={
+                    InputFormat.PDF: PdfFormatOption(pipeline_options=opts),
+                }
+            )
         return self._converter
 
     def parse(self, pdf_path: Path, document: DocumentMeta) -> ParseResult:
