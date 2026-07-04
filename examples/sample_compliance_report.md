@@ -9,7 +9,7 @@
 
 **Report ID:** CIR-SAMPLE-KYC
 **Prepared for:** Regulated Workflow Demo
-**Prepared by:** EvidenceOS Mini
+**Prepared by:** Mini-Doc
 **Prepared date:** 2026-07-03T22:40:00+08:00
 **Document bundle:** KYC / Beneficial Ownership Brief
 **Confidentiality:** Public demo data only

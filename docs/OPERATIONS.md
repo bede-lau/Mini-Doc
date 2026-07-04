@@ -1,6 +1,6 @@
 ﻿# Operations Runbook
 
-This runbook covers the reproducible local workflow for EvidenceOS Mini: prepare
+This runbook covers the reproducible local workflow for Mini-Doc: prepare
 the environment, ingest documents, parse/index them, run tests, run the benchmark,
 and record the remaining human-review steps.
 

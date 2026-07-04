@@ -1,4 +1,4 @@
-"""EvidenceOS Mini core package.
+"""Mini-Doc core package.
 
 Re-exports the public surface used by the API, scripts, and benchmark runner.
 Keep this the single import entry point so downstream code does not reach into

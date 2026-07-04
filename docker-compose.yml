@@ -1,4 +1,4 @@
-# EvidenceOS Mini — local infrastructure.
+# Mini-Doc — local infrastructure.
 # Only Qdrant is required. The FastAPI app and Next.js frontend run directly
 # (see README quickstart). Keeping the compose file minimal on purpose.
 services:

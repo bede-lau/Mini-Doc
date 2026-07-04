@@ -3,13 +3,13 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "evidenceos-mini"
+name = "mini-doc"
 version = "0.1.0"
-description = "EvidenceOS Mini — audit-ready document intelligence for regulated workflows (Akro work trial demo)."
+description = "Mini-Doc — audit-ready document intelligence for regulated workflows (Akro work trial demo)."
 requires-python = ">=3.11"
 readme = "README.md"
 license = { text = "MIT" }
-authors = [{ name = "EvidenceOS Mini" }]
+authors = [{ name = "Mini-Doc" }]
 
 [tool.setuptools.packages.find]
 where = ["."]

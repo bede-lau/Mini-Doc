@@ -1,4 +1,4 @@
-# Technical Memo — EvidenceOS Mini
+# Technical Memo — Mini-Doc
 
 A short, honest account of what worked, what failed, and what I would improve.
 Written from the build, not from aspiration.

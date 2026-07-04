@@ -97,7 +97,7 @@ class ReportConfig(BaseModel):
 class Report(BaseModel):
     report_id: str
     prepared_for: str = "Akro Work Trial Demo"
-    prepared_by: str = "EvidenceOS Mini"
+    prepared_by: str = "Mini-Doc"
     prepared_date: str
     document_bundle: str
     confidentiality: str = "Public demo data only"

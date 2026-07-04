@@ -3,7 +3,7 @@ import "./globals.css";
 import { Nav } from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "EvidenceOS Mini",
+  title: "Mini-Doc",
   description: "Audit-ready document intelligence for regulated workflows.",
 };
 
@@ -14,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Nav />
         <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
         <footer className="mx-auto max-w-6xl px-6 py-6 text-[11px] text-stone-400">
-          EvidenceOS Mini — public demo data only. Not legal, financial, insurance, or regulatory advice.
+          Mini-Doc — public demo data only. Not legal, financial, insurance, or regulatory advice.
         </footer>
       </body>
     </html>

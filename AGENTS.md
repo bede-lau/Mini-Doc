@@ -1,4 +1,4 @@
-# AGENTS.md — EvidenceOS Mini reference
+# AGENTS.md — Mini-Doc reference
 
 Single source of truth for any agent or engineer working in this repo. Read this
 first. Keep it in sync with the code.

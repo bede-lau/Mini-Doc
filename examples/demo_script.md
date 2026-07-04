@@ -9,7 +9,7 @@ backend + frontend running. Open four tabs: README, app Library, Q&A, Benchmark.
 
 ## 0:00 — Framing (README)
 
-> "This is EvidenceOS Mini, a local-first document-intelligence demo. It turns
+> "This is Mini-Doc, a local-first document-intelligence demo. It turns
 > public regulated documents into structured, citable knowledge, answers with
 > exact source provenance, abstains honestly, generates an audit-ready report, and
 > ships with a reproducible benchmark committed before its results."

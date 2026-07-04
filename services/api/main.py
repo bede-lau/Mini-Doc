@@ -1,4 +1,4 @@
-"""EvidenceOS Mini FastAPI application."""
+"""Mini-Doc FastAPI application."""
 from __future__ import annotations
 
 from fastapi import FastAPI
@@ -9,7 +9,7 @@ from services.api.routes import benchmarks, documents, qa, reports
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="EvidenceOS Mini API",
+        title="Mini-Doc API",
         description="Audit-ready document intelligence for regulated workflows.",
         version="0.1.0",
     )

@@ -1,4 +1,4 @@
-# EvidenceOS Mini — backend dependencies (Python 3.11–3.12 recommended).
+# Mini-Doc — backend dependencies (Python 3.11–3.12 recommended).
 # Install: pip install -r services/api/requirements.txt
 
 # Web framework

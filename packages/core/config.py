@@ -1,4 +1,4 @@
-"""Central configuration for EvidenceOS Mini.
+"""Central configuration for Mini-Doc.
 
 All values are environment-driven with sensible defaults, so the application
 runs out of the box with no API key (offline answer mode) and a local Qdrant.
