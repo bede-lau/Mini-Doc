@@ -19,18 +19,13 @@ Written from the build, not from aspiration.
 - **Honest benchmark.** 30 committed questions across 5 categories (incl. 5
   adversarial/abstention), committed before results; raw outputs and failures are
   kept. Manual metrics are explicitly blank for a human — never auto-filled.
-- **Behaviour tests.** 27 offline tests pin the parts that matter (schemas,
+- **Behaviour tests.** 30 offline tests pin the parts that matter (schemas,
   chunking, scoring, abstention, grounding) and run in <1s.
 - **Coherent module boundaries.** `packages/core` is importable and unit-tested
   independently of FastAPI/Next.js; the API is a thin shell over it.
 
 ## What did not work / was deferred
 
-- **No live run in this environment.** The repo was built where Docker/Qdrant and
-  model downloads are unavailable, so `results/run_001/` is a manual run (see
-  `MANUAL_TASKS.md`). The runner is verified to parse the benchmark set and write
-  all output files; the actual numbers must be produced on a machine with the
-  stack running.
 - **Docling version sensitivity.** Docling's document API has changed across
   releases. The adapter is defensive (attribute probing, fallbacks) but should be
   re-validated against the installed version — a real risk, honestly flagged.
@@ -63,14 +58,13 @@ Written from the build, not from aspiration.
    in the parsed chunks and backfill pages so `citation_page_match` is automatic.
 4. **A real LLM-judge lane** behind the existing optional metrics, keeping
    deterministic metrics as the always-on baseline.
-5. **Cross-document entity linking** for KYC (controller ↔ company ↔ filings) —
-   the "agentic knowledge layer" Akro emphasises.
+5. **Cross-document entity linking** for KYC (controller <-> company <-> filings).
 6. **Automated table-structure scoring** against a DocLayNet sample.
 
 ## Risks to flag to a reviewer
 
 - Verify the Docling adapter against your installed version before trusting parser
   metrics.
-- Run the manual steps in `MANUAL_TASKS.md` to produce a real `run_001`; do not
-  treat the sample report as a measured result.
+- Follow `docs/OPERATIONS.md` to reproduce `run_001`; do not treat the sample
+  report as a measured result.
 - On Python 3.13/3.14 Docling/torch wheels are missing — use 3.11/3.12.

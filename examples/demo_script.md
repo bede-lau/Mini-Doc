@@ -1,6 +1,6 @@
 # Demo Script — 5-minute walkthrough
 
-Audience: Marcus/Brian (Akro). Goal: show the regulated-analyst loop end to end —
+Audience: technical reviewers. Goal: show the regulated-analyst loop end to end ?
 ingest → structure → ground → reason → report → benchmark — and the two-commit
 benchmark-integrity proof.
 
@@ -9,7 +9,7 @@ backend + frontend running. Open four tabs: README, app Library, Q&A, Benchmark.
 
 ## 0:00 — Framing (README)
 
-> "This is EvidenceOS Mini, a document-intelligence work trial for Akro. It turns
+> "This is EvidenceOS Mini, a local-first document-intelligence demo. It turns
 > public regulated documents into structured, citable knowledge, answers with
 > exact source provenance, abstains honestly, generates an audit-ready report, and
 > ships with a reproducible benchmark committed before its results."
@@ -63,5 +63,5 @@ Ask something out of scope: **"What are the GDPR lawful bases for processing?"**
 
 > "Small, honest, reliable. Built to show engineering judgement — grounding is
 > enforced by the data model, abstention is first-class, and the benchmark is
-> reproducible without an API key. Here's what I'd harden next at Akro."
+> reproducible without an API key. Here's what I'd harden next."
 - One line on the improvement list (hybrid retrieval, bbox provenance in UI).

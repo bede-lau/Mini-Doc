@@ -8,7 +8,7 @@
 # Compliance Intelligence Review
 
 **Report ID:** CIR-SAMPLE-KYC
-**Prepared for:** Akro Work Trial Demo
+**Prepared for:** Regulated Workflow Demo
 **Prepared by:** EvidenceOS Mini
 **Prepared date:** 2026-07-03T22:40:00+08:00
 **Document bundle:** KYC / Beneficial Ownership Brief

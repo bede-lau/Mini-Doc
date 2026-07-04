@@ -98,7 +98,7 @@ Downloads the 9 public PDFs into `data/raw_docs/`. **Note:** the ACRA document i
 a landing page, not a direct PDF — fetch "Guidance on Register of Controllers for
 Companies" v2 (16 Jun 2025) manually and place it as
 `data/raw_docs/acra-registrable-controllers-guidance-2025.pdf`. See
-`MANUAL_TASKS.md`.
+`docs/OPERATIONS.md`.
 
 ## 7. Parse and index
 
@@ -238,6 +238,7 @@ manifests/       public_docs.csv
 benchmark/       questions · expected_answers · expected_sources · scoring_config · README
 data/            raw_docs · parsed · chunks (gitignored, regenerable)
 results/         run_001/* (committed) · reports/
+docs/            operations runbook
 examples/        sample_compliance_report · demo_script · technical_memo
 tests/           behaviour suite (pytest)
 ```
