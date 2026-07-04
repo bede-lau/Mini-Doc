@@ -1,4 +1,4 @@
-# EvidenceOS Mini
+# Mini-Doc
 
 **Audit-ready document intelligence for regulated workflows.** A small, honest,
 local-first document-intelligence pipeline: ingest messy regulated PDFs, parse
@@ -183,8 +183,21 @@ offline extractive grounding:
 | insufficient_evidence answers | 1 |
 | unsupported_claim_total (proxy) | 0 |
 
-Manual answer/citation/table/read-order scores are intentionally blank until a
-human reviewer fills the manual columns in `results/run_001/*.csv`.
+Manual (analyst-filled, see `results/run_001/manual_scoring.md`):
+
+| Metric | Value |
+|---|---:|
+| manual_answer_correctness (0/0.5/1) | 0.217 |
+| manual_citation_support (0/0.5/1) | 1.000 |
+| baseline: manual_table_score / reading_order (0–2) | 1 / 1 |
+| docling: manual_table_score / reading_order (0–2) | 2 / 2 |
+
+The low answer-correctness is the honest cost of the offline extractive default:
+it cannot synthesise figures or recombine evidence, so specific-figure and
+financial-table questions score 0 even when retrieval surfaces the right
+document. Citation support is a perfect 1.0 — every supported answer is a
+verbatim quote from its cited chunk, so nothing is fabricated. Re-runnable via
+`python scripts/apply_manual_scores.py`.
 
 ## 13. Failure analysis
 
