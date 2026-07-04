@@ -59,3 +59,8 @@ Thumbs.db
 .omc/
 .omx/
 .claude/
+# --- Local/internal task context ---
+AKRO_BUILD_REFERENCE.md
+CODING_AGENT_PROMPT.md
+MANUAL_TASKS.md
+
