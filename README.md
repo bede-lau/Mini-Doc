@@ -1,13 +1,11 @@
 # EvidenceOS Mini
 
 **Audit-ready document intelligence for regulated workflows.** A small, honest,
-local-first document-intelligence pipeline built as a technical work sample for
-Akro AI: ingest messy regulated PDFs, parse them (baseline + Docling), index with
-provenance, answer questions with **exact citations**, **abstain when evidence is
-weak**, generate a **compliance-ready report**, and prove it all with a
-**reproducible benchmark** whose questions were committed before the results.
-
-This is deliberately *not* a "chat-with-PDF" wrapper.
+local-first document-intelligence pipeline: ingest messy regulated PDFs, parse
+them (baseline + Docling), index with provenance, answer questions with **exact
+citations**, **abstain when evidence is weak**, generate a **compliance-ready
+report**, and prove it all with a **reproducible benchmark** whose questions were
+committed before the results.
 
 ---
 
@@ -27,21 +25,16 @@ The pipeline runs **with no API key**: a deterministic offline grounding mode is
 the default, so the benchmark is reproducible on any machine. An optional LLM
 adapter (OpenAI-compatible or Anthropic) can be enabled via env.
 
-## 2. Why this maps to Akro
+## 2. Why this matters for regulated workflows
 
-Akro positions itself as operational data intelligence for regulated industries —
-on-premise/sovereign AI workspaces that turn documents, records, and institutional
-knowledge into automated workflows with **precision, privacy, explainability,
-source provenance, and agentic knowledge layers**. Their finance/insurance/defence
-case studies emphasise: ingest heterogeneous documents, preserve structure
-(tables, layout), **ground every extracted fact to an exact source**, answer with
-citations, and produce defensible reports.
+Regulated document work needs more than fluent answers: systems must ingest
+heterogeneous files, preserve document structure, ground every extracted fact to
+an exact source, distinguish facts from inferences, abstain when evidence is weak,
+and produce reports that an auditor can inspect.
 
-This demo exercises that exact loop — **ingest → structure → ground → reason →
-report → benchmark** — with page/section provenance, mandatory citation trails,
+This demo exercises that loop: **ingest -> structure -> ground -> reason -> report ->
+benchmark** with page/section provenance, mandatory citation trails,
 abstention, and an audit-ready report template.
-
-See `AKRO_BUILD_REFERENCE.md` for the full alignment rationale and sources.
 
 ## 3. Demo video
 
@@ -219,7 +212,7 @@ reading order and some tables (that contrast is the point of having both parsers
   re-validated against your installed Docling version.
 - No auth, no multi-tenancy, no production deployment — by design.
 
-## 15. What I would improve during an Akro internship
+## 15. What I would improve next
 
 - **Hybrid retrieval**: add BM25 + dense fusion and a cross-encoder reranker
   (the config + filter plumbing already exist).
@@ -229,8 +222,7 @@ reading order and some tables (that contrast is the point of having both parsers
   metrics, keeping deterministic metrics as the always-on baseline.
 - **Page-band auto-fill**: post-parse, map each expected evidence snippet to its
   page so `citation_page_match` is computed automatically.
-- **Cross-document entity linking** for KYC (controller ↔ company ↔ filings),
-  which is where Akro's "agentic knowledge layer" adds the most value.
+- **Cross-document entity linking** for KYC (controller <-> company <-> filings).
 - **Table-structure scoring** automated against a DocLayNet sample.
 
 ---
