@@ -43,30 +43,71 @@ abstention, and an audit-ready report template.
 
 ## 4. Architecture
 
-```text
-apps/web (Next.js + TS)            services/api (FastAPI)
-  Library  ──┐                       /ingest  /documents  /parse  /index
-  Q&A      ──┼── HTTP (JSON) ───────▶ /search  /qa
-  Reports  ──┤                       /reports/generate
-  Benchmark ─┘                       /benchmarks/run  /benchmarks/results
-                                       │
-                            packages/core (importable as packages.core)
-   ┌───────────────────────────────────┴──────────────────────────────────┐
-   │ parsers/   baseline (pdfplumber) · docling · ocr(optional)           │
-   │ chunking/  token-aware, page/section-preserving, table-aware         │
-   │ retrieval/ SentenceTransformers embeddings · Qdrant store · retriever│
-   │ generation/ LLM adapter (openai|anthropic|offline) · grounded QA     │
-   │ reporting/ builder + Markdown renderer (audit template)              │
-   │ evaluation/ deterministic scoring + reproducible benchmark runner    │
-   │ schemas/   Pydantic source-of-truth (Document, Chunk, Answer, ...)   │
-   │ registry/  JSON document registry · pipeline orchestration           │
-   └──────────────────────────────────────────────────────────────────────┘
-                            │
-             Qdrant (Docker)  ◀── vectors + payload metadata
+### System at a glance
 
-data/   raw_docs · parsed · chunks      results/   run_001/* (committed)
-benchmark/  questions + expected_* (committed BEFORE results)
+```mermaid
+flowchart LR
+    subgraph UI["apps/web - Next.js + TypeScript"]
+        Library["Library<br/>doc status / parse / index"]
+        QA["Q&A<br/>grounded questions"]
+        Reports["Reports<br/>audit-ready Markdown"]
+        Bench["Benchmark<br/>run + inspect metrics"]
+    end
+
+    subgraph API["services/api - FastAPI"]
+        Ingest["/ingest / /documents"]
+        Parse["/parse / /index"]
+        Search["/search / /qa"]
+        ReportAPI["/reports/generate"]
+        BenchAPI["/benchmarks/run / /benchmarks/results"]
+    end
+
+    subgraph Core["packages/core - importable domain layer"]
+        Parsers["parsers<br/>baseline / Docling / optional OCR"]
+        Chunking["chunking<br/>token/page/section/table aware"]
+        Retrieval["retrieval<br/>SentenceTransformers / Qdrant store / retriever"]
+        Generation["generation<br/>offline/openai/anthropic / grounded QA"]
+        Reporting["reporting<br/>builder / Markdown renderer"]
+        Eval["evaluation<br/>deterministic scoring / benchmark runner"]
+        Schemas["schemas<br/>Pydantic contracts"]
+        Registry["registry + pipeline<br/>JSON registry / orchestration"]
+    end
+
+    subgraph Data["local artifacts"]
+        Raw["data/raw_docs"]
+        Parsed["data/parsed"]
+        Chunks["data/chunks"]
+        Results["results/run_001<br/>committed benchmark output"]
+        Questions["benchmark/questions + expected_*<br/>committed before results"]
+    end
+
+    Vector[("Qdrant Docker<br/>vectors + payload metadata")]
+
+    UI -->|HTTP JSON| API
+    API --> Core
+    Core --> Raw
+    Core --> Parsed
+    Core --> Chunks
+    Retrieval <--> Vector
+    Eval --> Results
+    Questions --> Eval
 ```
+
+
+### Layer responsibilities
+
+| Layer | What it owns | Why it matters |
+|---|---|---|
+| `apps/web` | Library, Q&A, Reports, and Benchmark pages | Human-facing workflow for ingesting, querying, reporting, and inspecting runs. |
+| `services/api` | `/ingest`, `/documents`, `/parse`, `/index`, `/search`, `/qa`, `/reports/generate`, `/benchmarks/*` | Thin HTTP boundary over the local document pipeline. |
+| `packages/core/parsers` | Baseline `pdfplumber`, Docling, optional OCR adapters | Converts messy PDFs into structured page elements. |
+| `packages/core/chunking` | Token-aware, overlap-aware, page/section/table-preserving chunks | Keeps retrieval units audit-friendly and never crosses document boundaries. |
+| `packages/core/retrieval` | SentenceTransformers embeddings, Qdrant payloads, filters, search orchestration | Finds evidence with provenance attached. |
+| `packages/core/generation` | Offline extractive answers plus optional OpenAI/Anthropic adapter | Produces grounded answers and abstains when evidence is weak. |
+| `packages/core/reporting` | Report builder and Markdown renderer | Turns cited answers into an audit-ready report. |
+| `packages/core/evaluation` | Deterministic scoring and benchmark runner | Makes retrieval, abstention, and citation behavior reproducible. |
+| `packages/core/schemas` | Pydantic source-of-truth models | Enforces the grounding contract at construction time. |
+| `data/`, `benchmark/`, `results/` | Raw/parsed/chunk artifacts, fixed questions, committed run output | Preserves benchmark integrity: questions before results, raw outputs retained. |
 
 **Grounding is structural, not aspirational:** `Claim` and `Answer` are Pydantic
 models that *reject* unsupported answers at construction time. A "supported"
@@ -203,9 +244,9 @@ verbatim quote from its cited chunk, so nothing is fabricated. Re-runnable via
 
 Failures are surfaced, not hidden:
 
-- `results/run_001/raw_outputs.jsonl` — every answer, including abstentions.
-- `results/run_001/retrieved_chunks.jsonl` — what was retrieved per question.
-- `results/run_001/scores.csv` — per-question metrics + blank **manual** columns.
+- `results/run_001/raw_outputs.jsonl` - every answer, including abstentions.
+- `results/run_001/retrieved_chunks.jsonl` - what was retrieved per question.
+- `results/run_001/scores.csv` - per-question deterministic metrics plus analyst-filled manual scoring columns.
 - `summary.md` lists top retrieval/abstention failures.
 
 Known failure modes to expect (honest design limits): dense-only retrieval (no
@@ -215,15 +256,16 @@ reading order and some tables (that contrast is the point of having both parsers
 
 ## 14. Limitations
 
-- Dense embeddings only (no hybrid/BM25 rerank yet — scaffolded in config).
+- Dense embeddings only (no hybrid/BM25 rerank yet - scaffolded in config).
 - Page numbers in `expected_sources.csv` are intentionally blank; they are filled
   after parsing (manual or via a future auto-fill step).
 - Manual metrics (`manual_answer_correctness`, `manual_citation_support`,
-  `manual_table_score`, `manual_reading_order_score`) are left blank for a human
-  to fill — they are never auto-generated.
+  `manual_table_score`, `manual_reading_order_score`) require human judgement.
+  For `run_001` they have been analyst-filled in `results/run_001/manual_scoring.md`;
+  future runs should keep them blank until reviewed.
 - Docling's API changes between versions; the adapter is defensive but should be
   re-validated against your installed Docling version.
-- No auth, no multi-tenancy, no production deployment — by design.
+- No auth, no multi-tenancy, no production deployment - by design.
 
 ## 15. What I would improve next
 

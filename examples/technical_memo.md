@@ -18,7 +18,7 @@ Written from the build, not from aspiration.
   baseline loses reading order and flattens tables; Docling preserves structure.
 - **Honest benchmark.** 30 committed questions across 5 categories (incl. 5
   adversarial/abstention), committed before results; raw outputs and failures are
-  kept. Manual metrics are explicitly blank for a human — never auto-filled.
+  kept. Manual metrics start blank for a human reviewer and are filled for `run_001` in `results/run_001/manual_scoring.md` — never auto-filled.
 - **Behaviour tests.** 30 offline tests pin the parts that matter (schemas,
   chunking, scoring, abstention, grounding) and run in <1s.
 - **Coherent module boundaries.** `packages/core` is importable and unit-tested

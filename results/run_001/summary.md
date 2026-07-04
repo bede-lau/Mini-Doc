@@ -31,8 +31,13 @@ _Generated: 2026-07-04T03:37:27+08:00_
 | Q022 | 0 | 1 | sfip-commentary-june-2025.pdf |
 | Q024 | 0 | 1 | nfip-claims-manual-june-2025.pdf |
 
-## Manual scoring (to be filled)
+## Manual scoring
 
-Fill `manual_answer_correctness`, `manual_citation_support`, `manual_table_score`, `manual_reading_order_score` in scores.csv.
+Analyst scoring has been applied in `scores.csv` and `parser_scores.csv`; detailed reasoning lives in `manual_scoring.md`.
+
+- mean manual_answer_correctness: **0.217**
+- mean manual_citation_support: **1.000**
+- baseline manual_table_score / reading_order: **1 / 1**
+- docling manual_table_score / reading_order: **2 / 2**
 
 _Manual metrics are committed by a human after inspecting raw outputs; they are never auto-filled._

@@ -127,18 +127,20 @@ The current committed `run_001` summary reports:
 | insufficient_evidence answers | 1 |
 | unsupported_claim_total (proxy) | 0 |
 
-## Manual review still required
+## Manual review status
 
-The following fields require human judgement and must not be auto-filled:
+Manual metrics require human judgement and must not be auto-filled for new runs.
+For the committed `run_001`, analyst scoring has been applied and documented in
+`results/run_001/manual_scoring.md`:
 
 - `results/run_001/scores.csv`
   - `manual_answer_correctness`
-  - `manual_citation_support`
+  - `manual_citation_support` (blank only for abstentions with no citation)
 - `results/run_001/parser_scores.csv`
   - `manual_table_score`
   - `manual_reading_order_score`
 
-Use `benchmark/scoring_config.yaml` for scoring scales.
+Use `benchmark/scoring_config.yaml` for scoring scales when reviewing future runs.
 
 ## Run the app
 
