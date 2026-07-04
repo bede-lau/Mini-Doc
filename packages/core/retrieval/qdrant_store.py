@@ -115,6 +115,8 @@ class QdrantStore:
                     chunk_text=payload.get("chunk_text", ""),
                     chunk_type=payload.get("chunk_type", "paragraph"),
                     parser=payload.get("parser", "baseline"),
+                    source_parser=payload.get("source_parser"),
+                    fallback_reason=payload.get("fallback_reason"),
                     score=float(p.score),
                     source_url=payload.get("source_url"),
                 )

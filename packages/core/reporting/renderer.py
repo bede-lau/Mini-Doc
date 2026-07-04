@@ -1,8 +1,8 @@
 """Render a Report to the compliance-ready Markdown template.
 
-Template follows AKRO_BUILD_REFERENCE.md exactly (title, header metadata, the
-ten numbered sections, three appendices). The Evidence Table (section 9) is
-always emitted.
+Template follows the Mini-Doc compliance-review structure (title, header
+metadata, ten numbered sections, three appendices). The Evidence Table
+(section 9) is always emitted.
 """
 from __future__ import annotations
 

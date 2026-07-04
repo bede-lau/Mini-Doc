@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { api } from "@/lib/api";
-import type { Answer as AnswerT } from "@/lib/types";
+import { useAppState } from "@/components/AppState";
 import { Button, Card, EmptyState, ErrorBox, Spinner } from "@/components/ui";
 
 const SUGGESTED = [
@@ -13,27 +11,8 @@ const SUGGESTED = [
 ];
 
 export default function QaPage() {
-  const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState<AnswerT | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showChunks, setShowChunks] = useState(false);
-
-  async function ask(q?: string) {
-    const query = (q ?? question).trim();
-    if (!query) return;
-    setQuestion(query);
-    setLoading(true);
-    setError(null);
-    setAnswer(null);
-    try {
-      setAnswer(await api.ask(query));
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { qa } = useAppState();
+  const { question, answer, loading, error, showChunks, setQuestion, setShowChunks, selectQuestion, ask } = qa;
 
   const typeStyle: Record<string, string> = {
     supported: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -67,8 +46,9 @@ export default function QaPage() {
           {SUGGESTED.map((s) => (
             <button
               key={s}
-              onClick={() => ask(s)}
+              onClick={() => selectQuestion(s)}
               className="rounded-full border border-rule px-3 py-1 text-xs text-stone-600 hover:bg-stone-100"
+              aria-label={`Load question: ${s}`}
             >
               {s}
             </button>
@@ -87,7 +67,18 @@ export default function QaPage() {
                 {answer.answer_type.replace(/_/g, " ")}
               </span>
             </div>
-            <p className="text-[15px] leading-relaxed text-ink">{answer.answer}</p>
+            <div className="space-y-1 text-[15px] leading-relaxed text-ink">
+              {answer.answer.split("\n").map((line, i) => {
+                const trimmed = line.trim();
+                if (!trimmed) return null;
+                const bullet = trimmed.startsWith("- ");
+                return (
+                  <p key={i} className={bullet ? "pl-4 before:mr-2 before:content-['•']" : ""}>
+                    {bullet ? trimmed.slice(2) : trimmed}
+                  </p>
+                );
+              })}
+            </div>
           </Card>
 
           {answer.claims.length > 0 && (
@@ -124,8 +115,15 @@ export default function QaPage() {
                   <li key={h.chunk_id} className="rounded-md border border-rule p-3 text-xs">
                     <div className="mono mb-1 flex items-center justify-between text-stone-500">
                       <span>{h.filename} · p.{h.page_start}</span>
-                      <span>score {h.score.toFixed(3)}</span>
+                      <span>
+                        {h.source_parser ? `${h.parser}/${h.source_parser}` : h.parser} · score {h.score.toFixed(3)}
+                      </span>
                     </div>
+                    {h.fallback_reason && (
+                      <div className="mb-1 text-[11px] text-amber-700">
+                        fallback: {h.fallback_reason}
+                      </div>
+                    )}
                     <p className="text-stone-700">{h.chunk_text.slice(0, 280)}{h.chunk_text.length > 280 ? "…" : ""}</p>
                   </li>
                 ))}

@@ -4,7 +4,7 @@ Audience: technical reviewers. Goal: show the regulated-analyst loop end to end 
 ingest → structure → ground → reason → report → benchmark — and the two-commit
 benchmark-integrity proof.
 
-**Setup (before recording):** Qdrant up; docs downloaded/parsed/indexed (docling);
+**Setup (before recording):** Qdrant up; docs downloaded/parsed/indexed (hybrid);
 backend + frontend running. Open four tabs: README, app Library, Q&A, Benchmark.
 
 ## 0:00 — Framing (README)
@@ -20,8 +20,8 @@ Point at the architecture diagram and the structural-grounding note
 ## 0:40 — Document Library
 
 - Show the 9-document bundle with domain, parser, page count, status, SHA256.
-- Note both parsers ran; the **baseline vs Docling** contrast is the engineering
-  signal (tables, reading order).
+- Note the single **Parse documents** button runs the Hybrid parser: Docling owns
+  structure/reading order while Baseline backfills weak pages and richer tables.
 
 ## 1:20 — Evidence Q&A (grounded)
 
@@ -64,4 +64,4 @@ Ask something out of scope: **"What are the GDPR lawful bases for processing?"**
 > "Small, honest, reliable. Built to show engineering judgement — grounding is
 > enforced by the data model, abstention is first-class, and the benchmark is
 > reproducible without an API key. Here's what I'd harden next."
-- One line on the improvement list (hybrid retrieval, bbox provenance in UI).
+- One line on the improvement list (BM25+dense retrieval, bbox provenance in UI).

@@ -1,8 +1,8 @@
 """Compliance report data model.
 
-The renderer (reporting/renderer.py) consumes a Report and emits the Markdown
-template defined in AKRO_BUILD_REFERENCE.md. Keeping data and rendering separate
-makes the report testable and the template easy to evolve.
+The renderer (reporting/renderer.py) consumes a Report and emits the
+compliance-review template. Keeping data and rendering separate makes the report
+testable and the template easy to evolve.
 """
 from __future__ import annotations
 
@@ -96,7 +96,7 @@ class ReportConfig(BaseModel):
 
 class Report(BaseModel):
     report_id: str
-    prepared_for: str = "Akro Work Trial Demo"
+    prepared_for: str = "Mini-Doc Review Workspace"
     prepared_by: str = "Mini-Doc"
     prepared_date: str
     document_bundle: str

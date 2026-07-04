@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import json
 from pathlib import Path
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
@@ -10,6 +11,7 @@ from packages.core.config import get_settings
 from packages.core.pipeline import index_document_chunks, parse_and_persist
 from packages.core.schemas.api import (
     DocumentListResponse,
+    DeleteDocumentResponse,
     IndexRequest,
     IndexResponse,
     IngestResponse,
@@ -126,6 +128,81 @@ def list_documents() -> DocumentListResponse:
     return DocumentListResponse(documents=docs, total=len(docs))
 
 
+def _unlink_if_exists(path: Path, root: Path, removed: list[str]) -> None:
+    resolved = path.resolve()
+    if not resolved.is_relative_to(root.resolve()):
+        raise HTTPException(status_code=400, detail=f"path escapes root: {path}")
+    if resolved.exists() and resolved.is_file():
+        resolved.unlink()
+        removed.append(str(resolved))
+
+
+def _remove_parse_metrics(document_id: str, metrics_path: Path, errors: list[str]) -> None:
+    if not metrics_path.exists():
+        return
+    kept: list[str] = []
+    changed = False
+    for line in metrics_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            if json.loads(line).get("document_id") == document_id:
+                changed = True
+                continue
+        except json.JSONDecodeError:
+            pass
+        kept.append(line)
+    if changed:
+        try:
+            metrics_path.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+        except OSError as exc:
+            errors.append(f"parse metrics cleanup failed: {exc}")
+
+
+@router.delete("/documents/{document_id}", response_model=DeleteDocumentResponse)
+def delete_document(document_id: str) -> DeleteDocumentResponse:
+    """Delete a document and its local parsed/chunked/vector artifacts.
+
+    The registry and files are removed even if Qdrant is unavailable; vector
+    cleanup is reported separately so local demo users are not blocked by Docker.
+    """
+    s = get_settings()
+    registry = get_registry()
+    doc = registry.get(document_id)
+    if doc is None:
+        raise HTTPException(status_code=404, detail=f"document not found: {document_id}")
+
+    removed: list[str] = []
+    errors: list[str] = []
+
+    _unlink_if_exists(s.raw_docs_dir / doc.filename, s.raw_docs_dir, removed)
+    for parser in ("baseline", "docling", "hybrid", "ocr"):
+        _unlink_if_exists(s.parsed_dir / parser / f"{document_id}_parsed.json", s.parsed_dir, removed)
+        _unlink_if_exists(s.chunks_dir / parser / f"{document_id}.jsonl", s.chunks_dir, removed)
+    _remove_parse_metrics(document_id, s.parsed_dir / "_parse_metrics.jsonl", errors)
+
+    vector_delete: str = "skipped"
+    try:
+        from packages.core.retrieval.qdrant_store import QdrantStore
+
+        QdrantStore(s).delete_document(document_id)
+        vector_delete = "success"
+    except Exception as exc:
+        vector_delete = "failed"
+        errors.append(f"vector delete skipped/failed: {exc}")
+        log.warning("vector delete failed for %s: %s", document_id, exc)
+
+    registry.delete(document_id)
+    return DeleteDocumentResponse(
+        document_id=document_id,
+        filename=doc.filename,
+        deleted=True,
+        removed_files=removed,
+        vector_delete=vector_delete,  # type: ignore[arg-type]
+        errors=errors,
+    )
+
+
 @router.post("/parse", response_model=ParseResponse)
 def parse(req: ParseRequest) -> ParseResponse:
     s = get_settings()
@@ -164,7 +241,7 @@ def parse(req: ParseRequest) -> ParseResponse:
 @router.post("/index", response_model=IndexResponse)
 def index(req: IndexRequest) -> IndexResponse:
     s = get_settings()
-    parsers = ["docling", "baseline"] if req.parser == "any" else [req.parser]
+    parsers = ["hybrid", "docling", "baseline"] if req.parser == "any" else [req.parser]
     total = 0
     errors: list[str] = []
     for p in parsers:

@@ -248,14 +248,14 @@ def build_report(
         bullets=[
             f"Included documents: {', '.join(d.filename for d in docs) or 'none indexed yet'}.",
             "Excluded documents: none on purpose.",
-            "Known extraction limitations: baseline parser loses reading order and some tables; Docling preserves structure where available.",
+            "Parser policy: Hybrid uses Docling structure where available and Baseline fallback for weak pages or richer tables.",
             "Known retrieval limitations: dense embeddings only (no BM25 rerank); top_k and abstention threshold are configurable.",
             "No private/client data used — public demo data only.",
         ],
     )
 
     cfg = ReportConfig(
-        parser="docling (+ baseline compared)",
+        parser="hybrid (Docling structure + Baseline fallback)",
         chunk_size=s.chunk_size,
         chunk_overlap=s.chunk_overlap,
         embedding_model=s.embedding_model,

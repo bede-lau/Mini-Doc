@@ -20,11 +20,20 @@ export interface DocumentMeta {
   document_type: string;
   source_url: string | null;
   page_count: number;
-  parser: "baseline" | "docling" | "ocr" | "none";
+  parser: "baseline" | "docling" | "hybrid" | "ocr" | "none";
   parse_started_at: string | null;
   parse_completed_at: string | null;
   parse_status: ParseStatus;
   sha256: string | null;
+  errors: string[];
+}
+
+export interface DeleteDocumentResponse {
+  document_id: string;
+  filename: string;
+  deleted: boolean;
+  removed_files: string[];
+  vector_delete: "success" | "skipped" | "failed";
   errors: string[];
 }
 
@@ -38,6 +47,8 @@ export interface RetrievalHit {
   chunk_text: string;
   chunk_type: string;
   parser: string;
+  source_parser: string | null;
+  fallback_reason: string | null;
   score: number;
   source_url: string | null;
 }
@@ -82,9 +93,17 @@ export interface BenchmarkSummary {
   };
 }
 
+export interface BenchmarkRunInfo {
+  run_id: string;
+  path: string;
+  has_summary: boolean;
+}
+
 export interface ReportResponse {
   report_id: string;
   report_path: string;
+  pdf_path: string;
+  pdf_url: string;
   markdown: string;
   report: Record<string, unknown>;
 }

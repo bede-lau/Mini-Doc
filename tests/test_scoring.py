@@ -7,6 +7,7 @@ from packages.core.evaluation.scoring import (
     mrr,
     recall_at_k,
 )
+from packages.core.evaluation.benchmark import load_run_result
 
 
 def _hits(filenames):
@@ -52,3 +53,36 @@ def test_abstention_correctness():
 def test_mean():
     assert mean([1, 0, 1]) == round(2 / 3, 4)
     assert mean([]) == 0.0
+
+
+def test_load_run_result_reads_saved_scores(settings):
+    out_dir = settings.results_dir / "run_test"
+    out_dir.mkdir(parents=True)
+    (out_dir / "scores.csv").write_text(
+        "\n".join(
+            [
+                "question_id,hit_at_1,recall_at_3,recall_at_5,mrr,citation_page_match,abstention_correctness,answer_type,unsupported_claim_count",
+                "q1,1,1,1,1.0,1,1,supported,0",
+                "q2,0,1,1,0.5,0,1,insufficient_evidence,2",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = load_run_result("run_test", settings=settings)
+
+    assert result["run_id"] == "run_test"
+    assert result["questions"] == 2
+    assert result["summary"]["hit_at_1"] == 0.5
+    assert result["summary"]["insufficient_evidence_answers"] == 1
+    assert result["summary"]["unsupported_claim_total"] == 2
+
+
+def test_load_run_result_rejects_path_traversal(settings):
+    try:
+        load_run_result("../run_test", settings=settings)
+    except ValueError as exc:
+        assert "invalid run_id" in str(exc)
+    else:
+        raise AssertionError("expected invalid run_id")

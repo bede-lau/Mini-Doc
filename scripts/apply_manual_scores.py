@@ -77,6 +77,8 @@ PARSER_MANUAL = {
     # docling: layout-aware table model + reading order are preserved where it emits items;
     # the high empty-page rate on this run reflects OCR-disabled sparse output, not ordering.
     "docling":  {"manual_table_score": 2, "manual_reading_order_score": 2},
+    # hybrid: Docling structure plus Baseline page/table fallback.
+    "hybrid":   {"manual_table_score": 2, "manual_reading_order_score": 2},
 }
 
 
@@ -145,6 +147,7 @@ def write_note() -> None:
         "|---|---|---|---|",
         "| baseline | 1 | 1 | pdfplumber partially captures tables; reading order roughly preserved but loses structure on multi-column financial reports. |",
         "| docling | 2 | 2 | Layout-aware table model and reading order preserved where items are emitted (OCR disabled on this run). |",
+        "| hybrid | 2 | 2 | Uses Docling for structure and Baseline for weak pages or richer table extraction, preserving coverage under Docling failures. |",
         "",
         "## Reading",
         "",

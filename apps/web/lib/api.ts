@@ -1,6 +1,8 @@
 import type {
   Answer,
   BenchmarkSummary,
+  BenchmarkRunInfo,
+  DeleteDocumentResponse,
   DocumentMeta,
   IngestResponse,
   ReportResponse,
@@ -34,13 +36,19 @@ export const api = {
     return asJson(await fetch(`${BASE}/documents`));
   },
 
+  async deleteDocument(document_id: string): Promise<DeleteDocumentResponse> {
+    return asJson(
+      await fetch(`${BASE}/documents/${encodeURIComponent(document_id)}`, { method: "DELETE" }),
+    );
+  },
+
   async ingest(file: File): Promise<IngestResponse> {
     const form = new FormData();
     form.append("file", file);
     return asJson(await fetch(`${BASE}/ingest`, { method: "POST", body: form }));
   },
 
-  async parse(parser: "baseline" | "docling", document_ids?: string[]) {
+  async parse(parser: "baseline" | "docling" | "hybrid" = "hybrid", document_ids?: string[]) {
     return asJson(
       await fetch(`${BASE}/parse`, {
         method: "POST",
@@ -50,7 +58,7 @@ export const api = {
     );
   },
 
-  async index(parser: "baseline" | "docling" | "any", document_ids?: string[]) {
+  async index(parser: "baseline" | "docling" | "hybrid" | "any" = "hybrid", document_ids?: string[]) {
     return asJson(
       await fetch(`${BASE}/index`, {
         method: "POST",
@@ -92,6 +100,10 @@ export const api = {
     );
   },
 
+  reportDownloadUrl(report: ReportResponse): string {
+    return `${BASE}${report.pdf_url}`;
+  },
+
   async runBenchmark(run_id = "run_001"): Promise<BenchmarkSummary> {
     return asJson<BenchmarkSummary>(
       await fetch(`${BASE}/benchmarks/run`, {
@@ -102,7 +114,17 @@ export const api = {
     );
   },
 
-  async benchmarkResults(): Promise<{ runs: { run_id: string; path: string; has_summary: boolean }[] }> {
+  async benchmarkResults(): Promise<{ runs: BenchmarkRunInfo[] }> {
     return asJson(await fetch(`${BASE}/benchmarks/results`));
+  },
+
+  async benchmarkResult(run_id: string): Promise<BenchmarkSummary> {
+    return asJson(await fetch(`${BASE}/benchmarks/results/${encodeURIComponent(run_id)}`));
+  },
+
+  async deleteBenchmarkRun(run_id: string): Promise<{ run_id: string; deleted: boolean; removed_files: string[] }> {
+    return asJson(
+      await fetch(`${BASE}/benchmarks/results/${encodeURIComponent(run_id)}`, { method: "DELETE" }),
+    );
   },
 };

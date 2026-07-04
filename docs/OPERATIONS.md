@@ -1,4 +1,4 @@
-﻿# Operations Runbook
+# Operations Runbook
 
 This runbook covers the reproducible local workflow for Mini-Doc: prepare
 the environment, ingest documents, parse/index them, run tests, run the benchmark,
@@ -63,6 +63,9 @@ For the current document bundle, all expected filenames are listed in
 ## Parse documents
 
 ```powershell
+python scripts/parse_docs.py --parser hybrid
+
+# Optional diagnostics/comparison:
 python scripts/parse_docs.py --parser baseline
 python scripts/parse_docs.py --parser docling
 ```
@@ -73,18 +76,23 @@ Outputs:
 - `data/chunks/{parser}/{document_id}.jsonl`
 - `data/parsed/_parse_metrics.jsonl`
 
-Docling is configured for the bundled embedded-text PDFs with OCR disabled to
-avoid local CPU/Windows memory pressure while preserving structured layout/table
-extraction where available.
+Hybrid is the default parser for the app and CLI. It uses Docling for layout,
+reading order, headings, lists and captions, but strictly backfills weak/empty
+pages and richer table extraction from the Baseline pdfplumber parser. Raw
+Baseline and raw Docling remain available for diagnostics and benchmark
+comparison. Docling is configured with OCR disabled to avoid local CPU/Windows
+memory pressure.
 
 ## Index documents
 
 ```powershell
-python scripts/index_docs.py --parser docling
+python scripts/index_docs.py --parser hybrid
 ```
 
-Expected successful local run for the current bundle: 1,735 Docling chunks indexed
-into Qdrant.
+Expected output is Hybrid chunks indexed into Qdrant. Exact chunk counts may
+change when Docling versions or fallback rules change; use
+`data/parsed/_parse_metrics.jsonl` and `results/<run_id>/parser_scores.csv` for
+the measured parser audit trail.
 
 ## Run tests
 
@@ -92,7 +100,7 @@ into Qdrant.
 pytest -q
 ```
 
-Current expected result: 30 passing tests.
+Current expected result: all tests passing (`pytest -q`).
 
 ## Run benchmark
 

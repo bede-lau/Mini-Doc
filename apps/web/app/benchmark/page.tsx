@@ -1,15 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { api } from "@/lib/api";
-import type { BenchmarkSummary } from "@/lib/types";
+import { useEffect } from "react";
+import { useAppState } from "@/components/AppState";
 import { Button, Card, EmptyState, ErrorBox, Spinner } from "@/components/ui";
-
-interface RunInfo {
-  run_id: string;
-  path: string;
-  has_summary: boolean;
-}
 
 function Metric({ label, value }: { label: string; value: number | string }) {
   return (
@@ -21,39 +14,36 @@ function Metric({ label, value }: { label: string; value: number | string }) {
 }
 
 export default function BenchmarkPage() {
-  const [runId, setRunId] = useState("run_001");
-  const [latest, setLatest] = useState<BenchmarkSummary | null>(null);
-  const [runs, setRuns] = useState<RunInfo[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadRuns = useCallback(async () => {
-    try {
-      setRuns((await api.benchmarkResults()).runs);
-    } catch {
-      /* runs list optional */
-    }
-  }, []);
+  const { benchmark } = useAppState();
+  const {
+    runId,
+    latest,
+    runs,
+    loading,
+    loadingRuns,
+    deletingRun,
+    error,
+    setRunId,
+    loadRuns,
+    run,
+    selectRun,
+    deleteRun,
+  } = benchmark;
 
   useEffect(() => {
     loadRuns();
   }, [loadRuns]);
 
-  async function run() {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.runBenchmark(runId);
-      setLatest(res);
-      await loadRuns();
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setLoading(false);
+  const s = latest?.summary;
+
+  function confirmDelete(runIdToDelete: string) {
+    const ok = window.confirm(
+      `Delete benchmark run "${runIdToDelete}"?\n\nThis permanently removes results/${runIdToDelete}/ (scores, raw outputs, retrieved chunks, summary, config). Source documents and indexes are untouched.`,
+    );
+    if (ok) {
+      deleteRun(runIdToDelete);
     }
   }
-
-  const s = latest?.summary;
 
   return (
     <div className="space-y-6">
@@ -96,17 +86,53 @@ export default function BenchmarkPage() {
         <div className="border-b border-rule px-4 py-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
           Past runs
         </div>
-        {runs.length === 0 ? (
+        {loadingRuns ? (
+          <div className="p-4"><Spinner label="Loading saved runs…" /></div>
+        ) : runs.length === 0 ? (
           <EmptyState>No runs yet. Run the benchmark to populate results/run_001/.</EmptyState>
         ) : (
-          <ul className="divide-y divide-rule">
-            {runs.map((r) => (
-              <li key={r.run_id} className="mono flex items-center justify-between px-4 py-2 text-sm">
-                <span className="text-ink">{r.run_id}</span>
-                <span className="text-stone-400">{r.path}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-3 p-4">
+            <label className="block text-sm">
+              <span className="mb-1 block text-xs uppercase tracking-wide text-stone-500">
+                Select a saved run
+              </span>
+              <select
+                value={latest?.run_id ?? ""}
+                onChange={(e) => selectRun(e.target.value)}
+                className="mono w-full rounded-md border border-rule bg-stone-50 px-3 py-2 text-sm outline-none focus:border-emerald-600 focus:bg-white md:w-80"
+              >
+                <option value="" disabled>
+                  Choose a past run…
+                </option>
+                {runs.map((r) => (
+                  <option key={r.run_id} value={r.run_id}>
+                    {r.run_id}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <ul className="divide-y divide-rule rounded-md border border-rule">
+              {runs.map((r) => (
+                <li key={r.run_id} className="mono flex items-center justify-between gap-3 px-3 py-2 text-xs">
+                  <button
+                    onClick={() => selectRun(r.run_id)}
+                    className="text-left text-ink hover:text-emerald-700"
+                  >
+                    {r.run_id}
+                  </button>
+                  <div className="flex items-center gap-3">
+                    <span className="text-stone-400">{r.path}</span>
+                    <Button
+                      variant="ghost"
+                      onClick={() => confirmDelete(r.run_id)}
+                    >
+                      {deletingRun === r.run_id ? "Deleting" : "Delete"}
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </Card>
     </div>

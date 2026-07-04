@@ -11,7 +11,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 ChunkType = Literal["paragraph", "table", "list", "figure_caption", "ocr", "unknown"]
-ParserName = Literal["baseline", "docling", "ocr"]
+ParserName = Literal["baseline", "docling", "hybrid", "ocr"]
 
 
 class ParsedChunk(BaseModel):
@@ -25,6 +25,8 @@ class ParsedChunk(BaseModel):
     chunk_type: ChunkType = "paragraph"
     bbox: list[float] | None = None
     parser: ParserName = "baseline"
+    source_parser: ParserName | None = None
+    fallback_reason: str | None = None
     ocr: bool = False
     token_count: int = 0
     source_url: str | None = None
@@ -46,7 +48,7 @@ class ParsedChunk(BaseModel):
     def make_chunk_id(document_id: str, page_start: int, index: int, parser: str = "x") -> str:
         # Include the parser so baseline/docling/ocr chunks for the same
         # doc/page/position do NOT collide (Qdrant point ids derive from this).
-        p = parser if parser in ("baseline", "docling", "ocr") else "x"
+        p = parser if parser in ("baseline", "docling", "hybrid", "ocr") else "x"
         return f"{p}_{document_id}_p{page_start}_c{index:03d}"
 
 

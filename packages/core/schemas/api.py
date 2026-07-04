@@ -32,9 +32,18 @@ class DocumentListResponse(BaseModel):
     total: int
 
 
+class DeleteDocumentResponse(BaseModel):
+    document_id: str
+    filename: str
+    deleted: bool
+    removed_files: list[str] = Field(default_factory=list)
+    vector_delete: Literal["success", "skipped", "failed"] = "skipped"
+    errors: list[str] = Field(default_factory=list)
+
+
 class ParseRequest(BaseModel):
-    parser: Literal["baseline", "docling"] = "baseline"
-    document_ids: list[str] | None = None  # None => all pending
+    parser: Literal["baseline", "docling", "hybrid"] = "hybrid"
+    document_ids: list[str] | None = None  # None => all registered documents
 
 
 class ParseResponse(BaseModel):
@@ -47,7 +56,7 @@ class ParseResponse(BaseModel):
 
 
 class IndexRequest(BaseModel):
-    parser: Literal["baseline", "docling", "any"] = "any"
+    parser: Literal["baseline", "docling", "hybrid", "any"] = "hybrid"
     document_ids: list[str] | None = None
 
 
@@ -84,6 +93,7 @@ class QARequest(BaseModel):
 __all__ = [
     "IngestResponse",
     "DocumentListResponse",
+    "DeleteDocumentResponse",
     "ParseRequest",
     "ParseResponse",
     "IndexRequest",

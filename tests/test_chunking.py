@@ -59,3 +59,20 @@ def test_chunk_type_and_token_count_propagate():
     chunks = Chunker(Settings(chunk_size=700, chunk_overlap=120)).chunk(_result([el], 1))
     assert chunks[0].chunk_type == "list"
     assert chunks[0].token_count > 0
+
+
+def test_chunk_preserves_hybrid_source_provenance():
+    el = PageElement(
+        page=1,
+        element_type="paragraph",
+        text="Recovered text.",
+        source_parser="baseline",
+        fallback_reason="docling output was weak/empty",
+    )
+    chunks = Chunker(Settings(chunk_size=700, chunk_overlap=120)).chunk(
+        _result([el], 1, doc=_doc(parser="hybrid"))
+    )
+
+    assert chunks[0].parser == "hybrid"
+    assert chunks[0].source_parser == "baseline"
+    assert chunks[0].fallback_reason == "docling output was weak/empty"

@@ -26,6 +26,8 @@ class RetrievalHit(BaseModel):
     chunk_text: str
     chunk_type: str = "paragraph"
     parser: str = "baseline"
+    source_parser: str | None = None
+    fallback_reason: str | None = None
     score: float = 0.0
     source_url: str | None = None
 

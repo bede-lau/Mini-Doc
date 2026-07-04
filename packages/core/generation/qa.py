@@ -29,6 +29,21 @@ _STOP = {
 }
 _SENT_SPLIT = re.compile(r"(?<=[.!?])\s+|\n+")
 _WORD = re.compile(r"[A-Za-z][A-Za-z0-9'-]{1,}")
+_SECTION_PREFIX = re.compile(r"^\s*(?:\d+(?:\.\d+)*[\).\-\s]+|[A-Za-z][\).\-]\s*)")
+_ACTION_START = {
+    "approving",
+    "apprising",
+    "assessing",
+    "establishing",
+    "ensuring",
+    "giving",
+    "maintaining",
+    "managing",
+    "monitoring",
+    "reviewing",
+    "setting",
+    "undertaking",
+}
 
 
 # --------------------------------------------------------------------------- #
@@ -49,6 +64,51 @@ def _score_sentence(sentence: str, qterms: set[str]) -> int:
         return 0
     st = _terms(sentence)
     return len(qterms & st)
+
+
+def _word_count(text: str) -> int:
+    return len(_WORD.findall(text or ""))
+
+
+def _is_heading_like(sentence: str) -> bool:
+    """Reject section labels/TOC fragments that are not usable answer text."""
+    cleaned = re.sub(r"\s+", " ", sentence or "").strip()
+    if not cleaned:
+        return True
+    words = _WORD.findall(cleaned)
+    if len(words) <= 4:
+        return True
+    starts_numbered = bool(re.match(r"^\s*\d+(?:\.\d+)*\s+", cleaned))
+    lacks_terminal_punctuation = cleaned[-1:] not in ".;:?!"
+    starts_action = words[0].lower() in _ACTION_START if words else False
+    if starts_numbered and lacks_terminal_punctuation and len(words) <= 10:
+        return True
+    if lacks_terminal_punctuation and len(words) <= 8 and not starts_action:
+        return True
+    return False
+
+
+def _clean_answer_line(sentence: str) -> str:
+    cleaned = re.sub(r"\s+", " ", sentence or "").strip()
+    cleaned = _SECTION_PREFIX.sub("", cleaned).strip()
+    if not cleaned:
+        return sentence.strip()
+    cleaned = cleaned[0].upper() + cleaned[1:]
+    if cleaned[-1:] in ";,":
+        cleaned = cleaned[:-1].rstrip() + "."
+    if cleaned[-1:] not in ".;:?!":
+        cleaned += "."
+    return cleaned
+
+
+def _format_extractive_answer(chosen: list[tuple[RetrievalHit, str]]) -> str:
+    if not chosen:
+        return ABSTAIN_TEXT
+    if len(chosen) == 1:
+        return _clean_answer_line(chosen[0][1])
+    lines = ["Based on the cited evidence:"]
+    lines.extend(f"- {_clean_answer_line(sent)}" for _, sent in chosen)
+    return "\n".join(lines)
 
 
 def _norm(sentence: str) -> str:
@@ -100,6 +160,8 @@ def extractive_answer(
         for sent in _sentences(hit.chunk_text):
             if len(sent) < 15:
                 continue
+            if _is_heading_like(sent):
+                continue
             sc = _score_sentence(sent, qterms)
             if sc > 0:
                 scored.append((sc, hit, sent))
@@ -107,7 +169,13 @@ def extractive_answer(
     if not scored:
         return _abstain(question, hits)
 
-    scored.sort(key=lambda t: (-t[0],))
+    scored.sort(
+        key=lambda t: (
+            -t[0],
+            -min(_word_count(t[2]), 60),
+            -t[1].score,
+        )
+    )
     chosen: list[tuple[RetrievalHit, str]] = []
     seen: set[str] = set()
     for sc, hit, sent in scored:
@@ -129,7 +197,7 @@ def extractive_answer(
     return Answer(
         question=question,
         answer_type="supported",
-        answer=" ".join(sent for _, sent in chosen),
+        answer=_format_extractive_answer(chosen),
         claims=claims,
         citations=_dedupe_citations(citations),
         retrieved_chunks=hits,

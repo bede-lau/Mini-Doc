@@ -17,7 +17,7 @@ class DocumentMeta(BaseModel):
     document_type: str
     source_url: str | None = None
     page_count: int = 0
-    parser: Literal["baseline", "docling", "ocr", "none"] = "none"
+    parser: Literal["baseline", "docling", "hybrid", "ocr", "none"] = "none"
     parse_started_at: str | None = None
     parse_completed_at: str | None = None
     parse_status: ParseStatus = "pending"

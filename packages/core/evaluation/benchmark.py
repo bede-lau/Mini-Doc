@@ -334,5 +334,44 @@ def list_runs(settings: Settings | None = None) -> list[dict]:
     return runs
 
 
+def load_run_result(run_id: str, settings: Settings | None = None) -> dict:
+    """Load aggregate metrics for a completed benchmark run."""
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", run_id or ""):
+        raise ValueError("invalid run_id")
+    s = settings or get_settings()
+    out_dir = s.results_dir / run_id
+    scores = out_dir / "scores.csv"
+    if not scores.exists():
+        raise FileNotFoundError(f"benchmark scores not found for {run_id}")
+    rows = _read_csv(scores)
+    agg = _aggregate(rows)
+    return {"run_id": run_id, "questions": len(rows), "output_dir": str(out_dir), "summary": agg}
+
+
+def delete_run(run_id: str, settings: Settings | None = None) -> dict:
+    """Delete a benchmark run directory and everything under it.
+
+    Refuses anything that isn't a single path segment under ``results_dir`` so
+    a crafted run_id can't escape the results root.
+    """
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", run_id or ""):
+        raise ValueError("invalid run_id")
+    s = settings or get_settings()
+    out_dir = (s.results_dir / run_id).resolve()
+    if not out_dir.is_relative_to(s.results_dir.resolve()):
+        raise ValueError("run_id escapes results_dir")
+    if not out_dir.exists():
+        raise FileNotFoundError(f"benchmark run not found: {run_id}")
+    if not out_dir.is_dir():
+        raise ValueError(f"not a run directory: {run_id}")
+
+    import shutil
+
+    removed_files = [str(p) for p in out_dir.rglob("*") if p.is_file()]
+    shutil.rmtree(out_dir)
+    log.info("deleted benchmark run %s (%d files)", run_id, len(removed_files))
+    return {"run_id": run_id, "deleted": True, "removed_files": removed_files}
+
+
 # datetime import retained for potential timestamps; now_iso is the primary path.
 _ = datetime

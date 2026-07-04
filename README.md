@@ -2,7 +2,7 @@
 
 **Audit-ready document intelligence for regulated workflows.** A small, honest,
 local-first document-intelligence pipeline: ingest messy regulated PDFs, parse
-them (baseline + Docling), index with provenance, answer questions with **exact
+them with a strict Hybrid parser (Docling structure + Baseline fallback), index with provenance, answer questions with **exact
 citations**, **abstain when evidence is weak**, generate a **compliance-ready
 report**, and prove it all with a **reproducible benchmark** whose questions were
 committed before the results.
@@ -14,10 +14,11 @@ committed before the results.
 A local web app (FastAPI backend + Next.js frontend, Qdrant vector DB) that:
 
 1. ingests public/synthetic regulated PDFs;
-2. parses them with a **baseline** parser (pdfplumber) and a **Docling** parser;
+2. parses them with a **Hybrid** parser that uses Docling for structure and
+   Baseline/pdfplumber for weak pages or richer table extraction;
 3. chunks and indexes text/tables with rich metadata;
 4. answers questions with RAG and **exact citations (filename + page)**;
-5. **abstains** ("Insufficient evidence…") when retrieval is weak;
+5. **abstains** ("Insufficient evidence?") when retrieval is weak;
 6. generates a professional **compliance-ready Markdown report**;
 7. runs a **reproducible benchmark** committed before its results.
 
@@ -38,7 +39,7 @@ abstention, and an audit-ready report template.
 
 ## 3. Demo video
 
-> _Placeholder:_ `[Loom / MP4 link]` — 5-minute walkthrough following
+> _Placeholder:_ `[Loom / MP4 link]` ? 5-minute walkthrough following
 > `examples/demo_script.md`.
 
 ## 4. Architecture
@@ -63,7 +64,7 @@ flowchart LR
     end
 
     subgraph Core["packages/core - importable domain layer"]
-        Parsers["parsers<br/>baseline / Docling / optional OCR"]
+        Parsers["parsers<br/>Hybrid default / Baseline / Docling / optional OCR"]
         Chunking["chunking<br/>token/page/section/table aware"]
         Retrieval["retrieval<br/>SentenceTransformers / Qdrant store / retriever"]
         Generation["generation<br/>offline/openai/anthropic / grounded QA"]
@@ -100,7 +101,7 @@ flowchart LR
 |---|---|---|
 | `apps/web` | Library, Q&A, Reports, and Benchmark pages | Human-facing workflow for ingesting, querying, reporting, and inspecting runs. |
 | `services/api` | `/ingest`, `/documents`, `/parse`, `/index`, `/search`, `/qa`, `/reports/generate`, `/benchmarks/*` | Thin HTTP boundary over the local document pipeline. |
-| `packages/core/parsers` | Baseline `pdfplumber`, Docling, optional OCR adapters | Converts messy PDFs into structured page elements. |
+| `packages/core/parsers` | Hybrid default, Baseline `pdfplumber`, Docling, optional OCR adapters | Converts messy PDFs into structured page elements while preserving fallback coverage. |
 | `packages/core/chunking` | Token-aware, overlap-aware, page/section/table-preserving chunks | Keeps retrieval units audit-friendly and never crosses document boundaries. |
 | `packages/core/retrieval` | SentenceTransformers embeddings, Qdrant payloads, filters, search orchestration | Finds evidence with provenance attached. |
 | `packages/core/generation` | Offline extractive answers plus optional OpenAI/Anthropic adapter | Produces grounded answers and abstains when evidence is weak. |
@@ -136,7 +137,7 @@ python scripts/download_public_docs.py
 ```
 
 Downloads the 9 public PDFs into `data/raw_docs/`. **Note:** the ACRA document is
-a landing page, not a direct PDF — fetch "Guidance on Register of Controllers for
+a landing page, not a direct PDF ? fetch "Guidance on Register of Controllers for
 Companies" v2 (16 Jun 2025) manually and place it as
 `data/raw_docs/acra-registrable-controllers-guidance-2025.pdf`. See
 `docs/OPERATIONS.md`.
@@ -144,13 +145,18 @@ Companies" v2 (16 Jun 2025) manually and place it as
 ## 7. Parse and index
 
 ```bash
-python scripts/parse_docs.py --parser baseline   # fast baseline
-python scripts/parse_docs.py --parser docling     # structured (tables, layout)
-python scripts/index_docs.py --parser docling     # embed + upsert into Qdrant
+python scripts/parse_docs.py --parser hybrid      # default: Docling structure + Baseline fallback
+python scripts/index_docs.py --parser hybrid      # embed + upsert into Qdrant
+
+# Optional diagnostics/comparison:
+python scripts/parse_docs.py --parser baseline    # fast pdfplumber baseline
+python scripts/parse_docs.py --parser docling      # raw Docling structured parser
 ```
 
-The first Docling run may download layout/OCR models (~hundreds of MB); the first
-index run downloads the `bge-small` embedding model (~130 MB). Both cache locally.
+The first Hybrid/Docling run may download layout/OCR models (~hundreds of MB);
+the first index run downloads the `bge-small` embedding model (~130 MB). Both
+cache locally. Hybrid also guards against Docling page-level failures such as
+`std::bad_alloc` by backfilling weak/empty pages with Baseline output.
 
 ## 8. Run the app
 
@@ -158,7 +164,7 @@ Backend:
 
 ```bash
 uvicorn services.api.main:app --reload
-# API at http://localhost:8000  ·  docs at /docs
+# API at http://localhost:8000  ?  docs at /docs
 ```
 
 Frontend (separate shell):
@@ -201,11 +207,11 @@ reproducible.
 
 Enforced by a two-commit rule (see `benchmark/README.md`):
 
-- **Commit 1** — the fixed set + scoring script (`test: add fixed benchmark set`).
-- **Commit 2** — the results only (`eval: add first reproducible benchmark run`).
+- **Commit 1** ? the fixed set + scoring script (`test: add fixed benchmark set`).
+- **Commit 2** ? the results only (`eval: add first reproducible benchmark run`).
 
 Questions are never edited after results are seen; changes go into a new
-`benchmark_v2/` → `results/run_002/`.
+`benchmark_v2/` ? `results/run_002/`.
 
 ## 12. Result summary
 
@@ -230,13 +236,14 @@ Manual (analyst-filled, see `results/run_001/manual_scoring.md`):
 |---|---:|
 | manual_answer_correctness (0/0.5/1) | 0.217 |
 | manual_citation_support (0/0.5/1) | 1.000 |
-| baseline: manual_table_score / reading_order (0–2) | 1 / 1 |
-| docling: manual_table_score / reading_order (0–2) | 2 / 2 |
+| baseline: manual_table_score / reading_order (0?2) | 1 / 1 |
+| docling: manual_table_score / reading_order (0?2) | 2 / 2 |
+| hybrid: manual_table_score / reading_order (0-2) | 2 / 2 |
 
 The low answer-correctness is the honest cost of the offline extractive default:
 it cannot synthesise figures or recombine evidence, so specific-figure and
 financial-table questions score 0 even when retrieval surfaces the right
-document. Citation support is a perfect 1.0 — every supported answer is a
+document. Citation support is a perfect 1.0 ? every supported answer is a
 verbatim quote from its cited chunk, so nothing is fabricated. Re-runnable via
 `python scripts/apply_manual_scores.py`.
 
@@ -251,8 +258,8 @@ Failures are surfaced, not hidden:
 
 Known failure modes to expect (honest design limits): dense-only retrieval (no
 BM25 rerank) can miss keyword-specific queries; the offline extractor can only
-cite sentences that share terms with the question; the baseline parser loses
-reading order and some tables (that contrast is the point of having both parsers).
+cite sentences that share terms with the question; raw Baseline/Docling outputs
+can still be compared, while Hybrid is the default path for resilient demos.
 
 ## 14. Limitations
 
@@ -263,8 +270,9 @@ reading order and some tables (that contrast is the point of having both parsers
   `manual_table_score`, `manual_reading_order_score`) require human judgement.
   For `run_001` they have been analyst-filled in `results/run_001/manual_scoring.md`;
   future runs should keep them blank until reviewed.
-- Docling's API changes between versions; the adapter is defensive but should be
-  re-validated against your installed Docling version.
+- Docling's API changes between versions. Raw Docling diagnostics should be
+  re-validated against your installed Docling version; the default Hybrid path
+  backfills weak/failed Docling pages with Baseline output.
 - No auth, no multi-tenancy, no production deployment - by design.
 
 ## 15. What I would improve next
@@ -285,19 +293,19 @@ reading order and some tables (that contrast is the point of having both parsers
 ## Repo layout
 
 ```text
-packages/core/   parsers · chunking · retrieval · generation · reporting · evaluation · schemas · registry · pipeline
-services/api/    FastAPI app + routes (documents · qa · reports · benchmarks)
-apps/web/        Next.js (Library · Q&A · Reports · Benchmark)
-scripts/         download_public_docs · parse_docs · index_docs · run_benchmark
+packages/core/   parsers ? chunking ? retrieval ? generation ? reporting ? evaluation ? schemas ? registry ? pipeline
+services/api/    FastAPI app + routes (documents ? qa ? reports ? benchmarks)
+apps/web/        Next.js (Library ? Q&A ? Reports ? Benchmark)
+scripts/         download_public_docs ? parse_docs ? index_docs ? run_benchmark
 manifests/       public_docs.csv
-benchmark/       questions · expected_answers · expected_sources · scoring_config · README
-data/            raw_docs · parsed · chunks (gitignored, regenerable)
-results/         run_001/* (committed) · reports/
+benchmark/       questions ? expected_answers ? expected_sources ? scoring_config ? README
+data/            raw_docs ? parsed ? chunks (gitignored, regenerable)
+results/         run_001/* (committed) ? reports/
 docs/            operations runbook
-examples/        sample_compliance_report · demo_script · technical_memo
+examples/        sample_compliance_report ? demo_script ? technical_memo
 tests/           behaviour suite (pytest)
 ```
 
 ## License
 
-MIT. Public demo data only — not legal, financial, insurance, or regulatory advice.
+MIT. Public demo data only ? not legal, financial, insurance, or regulatory advice.

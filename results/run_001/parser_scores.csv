@@ -1,3 +1,4 @@
 parser,document_count,parse_success_rate,empty_page_rate,avg_latency_seconds_per_page,crash_count,manual_table_score,manual_reading_order_score
-baseline,9,1.0,0.0024,0.065,0,1,1
-docling,19,1.0,0.88,1.0716,0,2,2
+baseline,36,1.0,0.0024,0.0761,0,,
+docling,30,1.0,0.8231,0.8764,0,,
+hybrid,39,1.0,0.0024,0.8275,0,,

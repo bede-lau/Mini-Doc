@@ -1,4 +1,4 @@
-# Technical Memo — Mini-Doc
+# Technical Memo ? Mini-Doc
 
 A short, honest account of what worked, what failed, and what I would improve.
 Written from the build, not from aspiration.
@@ -12,23 +12,26 @@ Written from the build, not from aspiration.
   the retrieved chunks. This makes hallucination a type error, not a hope.
 - **Keyless reproducibility.** A deterministic offline-extractive answerer is the
   default, so the benchmark runs identically on any machine without an API key.
-  The LLM adapter is a swap-in upgrade, not a dependency.
-- **Parser plurality.** Baseline (pdfplumber) and Docling share one output schema
-  (`PageElement → ParsedChunk`). The contrast between them is itself a finding:
-  baseline loses reading order and flattens tables; Docling preserves structure.
+- **Hybrid parser.** Baseline (pdfplumber), Docling, and Hybrid share one output
+  schema (`PageElement -> ParsedChunk`). Hybrid is the default: Docling owns
+  reading order/headings/lists/captions while Baseline backfills weak pages and
+  materially richer table extraction.
 - **Honest benchmark.** 30 committed questions across 5 categories (incl. 5
   adversarial/abstention), committed before results; raw outputs and failures are
-  kept. Manual metrics start blank for a human reviewer and are filled for `run_001` in `results/run_001/manual_scoring.md` — never auto-filled.
-- **Behaviour tests.** 30 offline tests pin the parts that matter (schemas,
-  chunking, scoring, abstention, grounding) and run in <1s.
+  kept. Manual metrics start blank for a human reviewer and are filled for
+  `run_001` in `results/run_001/manual_scoring.md` ? never auto-filled.
+- **Behaviour tests.** The offline test suite pins the parts that matter
+  (schemas, chunking, scoring, abstention, grounding) and runs quickly.
 - **Coherent module boundaries.** `packages/core` is importable and unit-tested
   independently of FastAPI/Next.js; the API is a thin shell over it.
 
 ## What did not work / was deferred
 
 - **Docling version sensitivity.** Docling's document API has changed across
-  releases. The adapter is defensive (attribute probing, fallbacks) but should be
-  re-validated against the installed version — a real risk, honestly flagged.
+  releases. The Hybrid path is defensive: it lets Docling provide structure but
+  falls back to Baseline when pages are weak or native failures such as
+  `std::bad_alloc` occur. Raw Docling diagnostics should still be re-validated
+  against the installed version.
 - **Page-band auto-fill not implemented.** `expected_sources.csv` leaves pages
   blank by design; `citation_page_match` therefore measures document-level hits
   unless a human (or a future post-parse mapper) fills pages.
@@ -51,10 +54,10 @@ Written from the build, not from aspiration.
 
 ## What I would improve next (prioritised)
 
-1. **Hybrid retrieval** (BM25 + dense + cross-encoder rerank) — biggest score lift.
-2. **Bounding-box provenance in the UI** — Docling already carries `bbox`; render
+1. **BM25 + dense retrieval** with cross-encoder rerank ? biggest score lift.
+2. **Bounding-box provenance in the UI** ? Docling already carries `bbox`; render
    the highlighted source span on the citation card.
-3. **Page-band auto-fill** — post-parse, locate each `expected_evidence_snippet`
+3. **Page-band auto-fill** ? post-parse, locate each `expected_evidence_snippet`
    in the parsed chunks and backfill pages so `citation_page_match` is automatic.
 4. **A real LLM-judge lane** behind the existing optional metrics, keeping
    deterministic metrics as the always-on baseline.
@@ -63,8 +66,8 @@ Written from the build, not from aspiration.
 
 ## Risks to flag to a reviewer
 
-- Verify the Docling adapter against your installed version before trusting parser
-  metrics.
+- Verify the Docling/Hybrid adapters against your installed version before
+  trusting parser metrics.
 - Follow `docs/OPERATIONS.md` to reproduce `run_001`; do not treat the sample
   report as a measured result.
-- On Python 3.13/3.14 Docling/torch wheels are missing — use 3.11/3.12.
+- On Python 3.13/3.14 Docling/torch wheels are missing ? use 3.11/3.12.

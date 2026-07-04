@@ -35,7 +35,7 @@ def get_retriever_or_503():
             detail=(
                 f"Retrieval backend unavailable: {exc}. "
                 "Start Qdrant (`docker compose up -d qdrant`) and index documents "
-                "(`python scripts/index_docs.py --parser docling`)."
+        "(`python scripts/index_docs.py --parser hybrid`)."
             ),
         ) from exc
 

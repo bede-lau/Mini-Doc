@@ -1,8 +1,8 @@
-"""Parse raw PDFs into chunks (baseline or docling).
+"""Parse raw PDFs into chunks (hybrid, baseline, or docling).
 
 Usage:
-    python scripts/parse_docs.py --parser baseline
-    python scripts/parse_docs.py --parser docling [--document-ids <id,...>] [--force]
+python scripts/parse_docs.py --parser hybrid
+python scripts/parse_docs.py --parser docling [--document-ids <id,...>] [--force]
 
 Registers any unregistered raw PDF (using the manifest for metadata), parses it
 with the selected parser, writes element JSON + chunk JSONL, updates the
@@ -47,7 +47,7 @@ def _register_raw(filename: str, registry: DocumentRegistry, mindex: dict) -> Do
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--parser", choices=["baseline", "docling"], default="baseline")
+    ap.add_argument("--parser", choices=["baseline", "docling", "hybrid"], default="hybrid")
     ap.add_argument("--document-ids", help="comma-separated document_ids (default: all)")
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()

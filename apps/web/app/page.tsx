@@ -1,68 +1,18 @@
-"use client";
+﻿"use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { api } from "@/lib/api";
-import type { DocumentMeta } from "@/lib/types";
+import { useAppState } from "@/components/AppState";
 import { Button, Card, EmptyState, ErrorBox, Spinner, StatusBadge } from "@/components/ui";
 
 export default function LibraryPage() {
-  const [docs, setDocs] = useState<DocumentMeta[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
+  const { library } = useAppState();
+  const { docs, loading, error, busy, upload, deleteDocument, parse, index } = library;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const r = await api.documents();
-      setDocs(r.documents);
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  async function onUpload(file: File) {
-    setBusy("upload");
-    setError(null);
-    try {
-      await api.ingest(file);
-      await load();
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function onParse(parser: "baseline" | "docling") {
-    setBusy(`parse:${parser}`);
-    setError(null);
-    try {
-      await api.parse(parser);
-      await load();
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function onIndex() {
-    setBusy("index");
-    setError(null);
-    try {
-      await api.index("any");
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setBusy(null);
+  function confirmDelete(documentId: string, filename: string) {
+    const ok = window.confirm(
+      `Delete "${filename}" from the library?\n\nThis removes the source PDF, parsed files, chunks, registry entry, and indexed vectors when Qdrant is available.`,
+    );
+    if (ok) {
+      deleteDocument(documentId);
     }
   }
 
@@ -83,27 +33,24 @@ export default function LibraryPage() {
               accept="application/pdf"
               className="hidden"
               disabled={!!busy}
-              onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
+              onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])}
             />
           </label>
-          <Button variant="ghost" disabled={!!busy} onClick={() => onParse("baseline")}>
-            Parse baseline
+          <Button variant="ghost" disabled={!!busy} onClick={parse}>
+            Parse documents
           </Button>
-          <Button variant="ghost" disabled={!!busy} onClick={() => onParse("docling")}>
-            Parse docling
-          </Button>
-          <Button disabled={!!busy} onClick={onIndex}>
+          <Button disabled={!!busy} onClick={index}>
             Index
           </Button>
         </div>
       </div>
 
-      {busy && <Spinner label={`Working: ${busy}…`} />}
+      {busy && <Spinner label={`Working: ${busy}...`} />}
       {error && <ErrorBox message={error} />}
 
       <Card className="overflow-hidden">
         {loading ? (
-          <Spinner label="Loading documents…" />
+          <Spinner label="Loading documents..." />
         ) : docs.length === 0 ? (
           <EmptyState>
             No documents yet. Run the quickstart: download docs, then parse &amp; index from the API or CLI.
@@ -118,6 +65,7 @@ export default function LibraryPage() {
                 <th className="px-4 py-2 font-medium">Pages</th>
                 <th className="px-4 py-2 font-medium">Status</th>
                 <th className="px-4 py-2 font-medium">SHA256</th>
+                <th className="px-4 py-2 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -132,7 +80,7 @@ export default function LibraryPage() {
                         rel="noreferrer"
                         className="text-[11px] text-stone-400 hover:text-emerald-700"
                       >
-                        source ↗
+                        source
                       </a>
                     )}
                   </td>
@@ -141,7 +89,16 @@ export default function LibraryPage() {
                   <td className="mono px-4 py-2 text-stone-600">{d.page_count}</td>
                   <td className="px-4 py-2"><StatusBadge status={d.parse_status} /></td>
                   <td className="mono px-4 py-2 text-xs text-stone-400">
-                    {(d.sha256 || "").slice(0, 12)}…
+                    {(d.sha256 || "").slice(0, 12)}...
+                  </td>
+                  <td className="px-4 py-2">
+                    <Button
+                      variant="ghost"
+                      disabled={!!busy}
+                      onClick={() => confirmDelete(d.document_id, d.filename)}
+                    >
+                      {busy === `delete:${d.document_id}` ? "Deleting" : "Delete"}
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -152,3 +109,4 @@ export default function LibraryPage() {
     </div>
   );
 }
+

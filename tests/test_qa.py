@@ -76,6 +76,38 @@ def test_api_answer_degrades_to_extractive_on_bad_json():
     assert a.citations
 
 
+def test_offline_answer_skips_heading_fragments_and_formats_bullets():
+    hits = [
+        _hit("heading", "mas-trm.pdf", 7, "3 Technology Risk Governance and Oversight", 0.91),
+        _hit(
+            "c1",
+            "mas-trm.pdf",
+            8,
+            "ensuring a sound and robust risk management framework is established and maintained to manage technology risks;",
+            0.9,
+        ),
+        _hit(
+            "c2",
+            "mas-trm.pdf",
+            8,
+            "ensuring there is a technology risk management function to oversee the technology risk management framework and strategy;",
+            0.89,
+        ),
+    ]
+
+    a = extractive_answer(
+        "What are the key expectations around technology risk governance?",
+        hits,
+        Settings(abstention_threshold=0.35),
+    )
+
+    assert a.answer_type == "supported"
+    assert "3 Technology Risk Governance" not in a.answer
+    assert a.answer.startswith("Based on the cited evidence:")
+    assert "- Ensuring" in a.answer
+    assert all(cl.claim_text in {hits[1].chunk_text, hits[2].chunk_text} for cl in a.claims)
+
+
 def test_extract_json_handles_fences_and_garbage():
     assert _extract_json("```json\n{\"a\":1}\n```") == {"a": 1}
     assert _extract_json("prefix {\"b\":2} suffix") == {"b": 2}

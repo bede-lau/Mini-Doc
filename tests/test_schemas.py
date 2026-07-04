@@ -8,6 +8,7 @@ from packages.core.schemas.evidence import Answer, Citation, Claim
 
 def test_chunk_id_format():
     assert ParsedChunk.make_chunk_id("d1", 12, 3, "docling") == "docling_d1_p12_c003"
+    assert ParsedChunk.make_chunk_id("d1", 12, 3, "hybrid") == "hybrid_d1_p12_c003"
     # parser dimension prevents cross-parser Qdrant point collisions
     assert (
         ParsedChunk.make_chunk_id("d1", 12, 3, "baseline")

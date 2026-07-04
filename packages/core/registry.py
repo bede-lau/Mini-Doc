@@ -48,6 +48,13 @@ class DocumentRegistry:
     def get(self, document_id: str) -> DocumentMeta | None:
         return self.docs.get(document_id)
 
+    def delete(self, document_id: str) -> DocumentMeta | None:
+        """Remove one document from the registry and persist the change."""
+        doc = self.docs.pop(document_id, None)
+        if doc is not None:
+            self.save()
+        return doc
+
     def by_filename(self, filename: str) -> DocumentMeta | None:
         return next((d for d in self.docs.values() if d.filename == filename), None)
 

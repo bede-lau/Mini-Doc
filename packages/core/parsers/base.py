@@ -10,7 +10,7 @@ from __future__ import annotations
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
@@ -30,6 +30,8 @@ class PageElement(BaseModel):
     text: str
     section_heading: str | None = None
     bbox: list[float] | None = None
+    source_parser: Literal["baseline", "docling", "hybrid", "ocr"] | None = None
+    fallback_reason: str | None = None
 
 
 class ParseResult(BaseModel):
@@ -39,6 +41,10 @@ class ParseResult(BaseModel):
     empty_pages: int = 0
     elapsed_seconds: float = 0.0
     errors: list[str] = Field(default_factory=list)
+    # Non-fatal audit trail (e.g. hybrid per-page baseline fallbacks). These are
+    # informational and must NOT flip parse_status to "partial" on their own —
+    # only ``errors`` and ``empty_pages`` count toward partial/failed status.
+    audit: list[str] = Field(default_factory=list)
     crashed: bool = False
 
     @property
@@ -77,7 +83,9 @@ class ParserAdapter(ABC):
             )
         elapsed = time.perf_counter() - start
         result.elapsed_seconds = result.elapsed_seconds or elapsed
-        status = "success" if not result.errors else "partial"
+        # "partial" reflects real signal only: hard errors or pages we could not
+        # fill. Audit notes (hybrid baseline fallbacks, etc.) do not count.
+        status = "partial" if (result.errors or result.empty_pages) else "success"
         if result.crashed:
             status = "failed"
         result.document = result.document.model_copy(
@@ -101,7 +109,13 @@ def get_parser(name: str) -> ParserAdapter:
     if name == "docling":
         from packages.core.parsers.docling_parser import DoclingParser
 
-        return DoclingParser()
+        # Windowed conversion avoids the docling-parse ``std::bad_alloc`` tail
+        # failure on long reports (fresh native allocator per page window).
+        return DoclingParser(window_size=8)
+    if name == "hybrid":
+        from packages.core.parsers.hybrid import HybridParser
+
+        return HybridParser()
     if name == "ocr":
         from packages.core.parsers.ocr import OCRParser
 

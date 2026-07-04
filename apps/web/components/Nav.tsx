@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogoMark } from "@/components/Logo";
 
 const LINKS = [
   { href: "/", label: "Library" },
@@ -15,9 +16,14 @@ export function Nav() {
   return (
     <header className="border-b border-rule bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-        <Link href="/" className="flex items-baseline gap-2">
-          <span className="text-sm font-semibold tracking-tight text-ink">EvidenceOS&nbsp;Mini</span>
-          <span className="text-[11px] uppercase tracking-widest text-stone-400">audit-ready docs</span>
+        <Link href="/" className="flex items-center gap-3">
+          <LogoMark />
+          <span className="flex flex-col leading-tight">
+            <span className="text-base font-semibold tracking-tight text-ink">Mini-Doc</span>
+            <span className="text-[10px] uppercase tracking-[0.22em] text-stone-400">
+              audit-ready docs
+            </span>
+          </span>
         </Link>
         <nav className="flex items-center gap-1">
           {LINKS.map((l) => {

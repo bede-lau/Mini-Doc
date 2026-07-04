@@ -40,7 +40,7 @@ class Chunker:
                       source_url: str | None, counter: list[int]) -> list[ParsedChunk]:
         # ParsedChunk.parser is a strict literal; normalise anything pre-parse
         # (e.g. "none") so the producer always emits schema-valid chunks.
-        if parser not in ("baseline", "docling", "ocr"):
+        if parser not in ("baseline", "docling", "hybrid", "ocr"):
             parser = "baseline"
         etype = element.element_type
         units = _table_rows(element.text) if etype == "table" else _sentences(element.text)
@@ -72,6 +72,8 @@ class Chunker:
                     chunk_type=etype,
                     bbox=element.bbox,
                     parser=parser,  # type: ignore[arg-type]
+                    source_parser=element.source_parser or parser,  # type: ignore[arg-type]
+                    fallback_reason=element.fallback_reason,
                     ocr=(etype == "ocr"),
                     token_count=max(1, estimate_tokens(text)),
                     source_url=source_url,

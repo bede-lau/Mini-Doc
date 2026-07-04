@@ -38,6 +38,7 @@ models/
 # Benchmark runs: commit run_001 explicitly (see benchmark README). Ignore ad-hoc runs.
 results/run_002/
 results/run_*/
+results/reports/
 !results/.gitkeep
 
 # --- Node / Next.js ---
@@ -47,6 +48,9 @@ out/
 .turbo/
 apps/web/.next/
 apps/web/node_modules/
+# Next.js generated build artifacts
+apps/web/next-env.d.ts
+apps/web/tsconfig.tsbuildinfo
 
 # --- OS / editor ---
 .DS_Store

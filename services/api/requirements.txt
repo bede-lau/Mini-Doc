@@ -12,6 +12,7 @@ pydantic-settings>=2.3
 
 # Parsing
 pdfplumber>=0.11          # baseline parser (text + tables)
+pypdf>=4.0                # page-window splitting for the docling parser
 docling>=2.25             # structured parser (layout, tables, OCR pipeline)
 # Optional OCR fallback for scanned forms:
 # pytesseract>=0.3.10
@@ -29,6 +30,9 @@ tiktoken>=0.7
 
 # YAML for benchmark config (stdlib-free repo otherwise)
 PyYAML>=6.0
+
+# Server-side professional PDF report rendering
+reportlab>=5.0
 
 # --- Optional LLM-as-judge evaluation (deterministic metrics work without these) ---
 # ragas>=0.2

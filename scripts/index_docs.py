@@ -1,8 +1,8 @@
 """Index parsed chunks into Qdrant.
 
 Usage:
-    python scripts/index_docs.py --parser docling
-    python scripts/index_docs.py --parser any [--document-ids <id,...>]
+python scripts/index_docs.py --parser hybrid
+python scripts/index_docs.py --parser any [--document-ids <id,...>]
 
 Requires Qdrant running: docker compose up -d qdrant
 """
@@ -37,7 +37,7 @@ def _iter_chunks(parser_dir, document_ids):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--parser", choices=["baseline", "docling", "ocr", "any"], default="docling")
+    ap.add_argument("--parser", choices=["baseline", "docling", "hybrid", "ocr", "any"], default="hybrid")
     ap.add_argument("--document-ids", help="comma-separated document_ids")
     ap.add_argument("--batch", type=int, default=64)
     args = ap.parse_args()
@@ -49,7 +49,7 @@ def main() -> int:
 
     document_ids = set(args.document_ids.split(",")) if args.document_ids else None
     parser_dirs = [s.chunks_dir / args.parser] if args.parser != "any" else [
-        s.chunks_dir / "docling", s.chunks_dir / "baseline", s.chunks_dir / "ocr"
+        s.chunks_dir / "hybrid", s.chunks_dir / "docling", s.chunks_dir / "baseline", s.chunks_dir / "ocr"
     ]
 
     embedder = Embedder(s)
