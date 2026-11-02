@@ -1,4 +1,23 @@
-# Mini-Doc
+<h1 align="center">Mini-Doc</h1>
+<p align="center"><b>Document intelligence with page-level citations, abstention and reproducible evaluation.</b></p>
+
+## ▍At a glance
+
+```mermaid
+flowchart LR
+ A["PDF documents"] --> B["Hybrid parsing"]
+ B --> C["Page-aware chunks"]
+ C --> D["Embeddings + Qdrant"]
+ D --> E{"Grounded answer"}
+ E -->|evidence| F["Cited claims / report"]
+ E -->|weak evidence| G["Abstain"]
+ H["Fixed benchmark"] --> E
+ E --> I["Recorded outputs + scores"]
+```
+
+Offline extractive grounding is the default; the committed benchmark and its limitations are documented below.
+
+---
 
 **Audit-ready document intelligence for regulated workflows.** A small, honest,
 local-first document-intelligence pipeline: ingest messy regulated PDFs, parse
