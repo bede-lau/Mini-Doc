@@ -1,183 +1,284 @@
-# Mini-Doc
+<p align="center">
+  Mini-Doc<br>
+  <strong>Ask a regulated PDF a question. Cite the page, or abstain.</strong><br>
+  <sub>Hybrid parse → token chunks → local bge-small on Qdrant → offline extractive answers → Markdown and PDF report → 30 questions committed before the results.</sub>
+</p>
 
-**Audit-ready document intelligence for regulated workflows.** A small, honest,
-local-first document-intelligence pipeline: ingest messy regulated PDFs, parse
-them with a strict Hybrid parser (Docling structure + Baseline fallback), index with provenance, answer questions with **exact
-citations**, **abstain when evidence is weak**, generate a **compliance-ready
-report**, and prove it all with a **reproducible benchmark** whose questions were
-committed before the results.
+<p align="center">
+  <img alt="Python 3.11+" src="https://img.shields.io/badge/Python-3.11%2B-111111?style=flat-square&logo=python&logoColor=19c37d">
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.115%2B-111111?style=flat-square&logo=fastapi&logoColor=19c37d">
+  <img alt="Next.js 14.2" src="https://img.shields.io/badge/Next.js-14.2-111111?style=flat-square&logo=nextdotjs&logoColor=19c37d">
+  <img alt="Qdrant v1.12.4" src="https://img.shields.io/badge/Qdrant-v1.12.4-111111?style=flat-square">
+  <img alt="Docling and pdfplumber" src="https://img.shields.io/badge/parse-Docling%20%2B%20pdfplumber-111111?style=flat-square">
+  <img alt="bge-small-en-v1.5" src="https://img.shields.io/badge/embeddings-bge--small--en--v1.5%20%C2%B7%20384d-111111?style=flat-square">
+  <img alt="offline by default" src="https://img.shields.io/badge/LLM-offline%20by%20default-19c37d?style=flat-square&color=0b3d31">
+  <img alt="46 pytest functions" src="https://img.shields.io/badge/pytest-46%20test%20functions-111111?style=flat-square">
+  <img alt="MIT" src="https://img.shields.io/badge/license-MIT-111111?style=flat-square">
+</p>
+
+No logo or screenshots are committed in this repository. The walkthrough is a script, not a recording. See [The demo](#the-demo).
 
 ---
 
-## 1. What this is
+## ▍The problem
 
-A local web app (FastAPI backend + Next.js frontend, Qdrant vector DB) that:
+Regulated document work fails when an answer is fluent and untraceable. An analyst has to ingest messy PDFs, keep section and table structure, tie every fact to a filename and a page, separate a quote from an inference, stop when the corpus does not cover the question, and hand an auditor a report they can re-read.
 
-1. ingests public/synthetic regulated PDFs;
-2. parses them with a **Hybrid** parser that uses Docling for structure and
-   Baseline/pdfplumber for weak pages or richer table extraction;
-3. chunks and indexes text/tables with rich metadata;
-4. answers questions with RAG and **exact citations (filename + page)**;
-5. **abstains** ("Insufficient evidence?") when retrieval is weak;
-6. generates a professional **compliance-ready Markdown report**;
-7. runs a **reproducible benchmark** committed before its results.
+Mini-Doc is a local demo of that loop on nine public PDFs (MAS, ACRA, three Singapore bank annual reports, two US NFIP flood documents). The default path needs no API key. `Claim` and `Answer` are Pydantic models: a supported answer cannot be constructed without a citation, and an `insufficient_evidence` answer cannot carry claims.
 
-The pipeline runs **with no API key**: a deterministic offline grounding mode is
-the default, so the benchmark is reproducible on any machine. An optional LLM
-adapter (OpenAI-compatible or Anthropic) can be enabled via env.
+---
 
-## 2. Why this matters for regulated workflows
-
-Regulated document work needs more than fluent answers: systems must ingest
-heterogeneous files, preserve document structure, ground every extracted fact to
-an exact source, distinguish facts from inferences, abstain when evidence is weak,
-and produce reports that an auditor can inspect.
-
-This demo exercises that loop: **ingest -> structure -> ground -> reason -> report ->
-benchmark** with page/section provenance, mandatory citation trails,
-abstention, and an audit-ready report template.
-
-## 3. Demo video
-
-> _Placeholder:_ `[Loom / MP4 link]` ? 5-minute walkthrough following
-> `examples/demo_script.md`.
-
-## 4. Architecture
-
-### System at a glance
+## ▍The pipeline at a glance
 
 ```mermaid
 flowchart LR
-    subgraph UI["apps/web - Next.js + TypeScript"]
-        Library["Library<br/>doc status / parse / index"]
-        QA["Q&A<br/>grounded questions"]
-        Reports["Reports<br/>audit-ready Markdown"]
-        Bench["Benchmark<br/>run + inspect metrics"]
+    classDef input fill:#0b0f0e,stroke:#19c37d,color:#e8f3ec,stroke-width:1.5px
+    classDef stage fill:#ffffff,stroke:#111,color:#111,stroke-width:1px
+    classDef model fill:#111,stroke:#111,color:#fff,stroke-width:1px
+    classDef output fill:#19c37d,stroke:#0b3d31,color:#04120d,stroke-width:1.5px
+
+    PDF[("Public PDF<br/>or upload ≤ 60 MB")]:::input
+
+    subgraph S1["01 · PARSE"]
+      direction TB
+      P1["Docling<br/>8-page windows, OCR off"]:::model
+      P2["Baseline<br/>pdfplumber text + tables"]:::stage
+      P3["Hybrid merge<br/>per page"]:::stage
+      P1 --> P3
+      P2 --> P3
     end
 
-    subgraph API["services/api - FastAPI"]
-        Ingest["/ingest / /documents"]
-        Parse["/parse / /index"]
-        Search["/search / /qa"]
-        ReportAPI["/reports/generate"]
-        BenchAPI["/benchmarks/run / /benchmarks/results"]
+    subgraph S2["02 · INDEX"]
+      direction TB
+      C1["Chunker<br/>700 tokens / 120 overlap"]:::stage
+      C2["bge-small-en-v1.5<br/>384-d"]:::model
+      C3[("Qdrant<br/>evidenceos_chunks")]:::input
+      C1 --> C2 --> C3
     end
 
-    subgraph Core["packages/core - importable domain layer"]
-        Parsers["parsers<br/>Hybrid default / Baseline / Docling / optional OCR"]
-        Chunking["chunking<br/>token/page/section/table aware"]
-        Retrieval["retrieval<br/>SentenceTransformers / Qdrant store / retriever"]
-        Generation["generation<br/>offline/openai/anthropic / grounded QA"]
-        Reporting["reporting<br/>builder / Markdown renderer"]
-        Eval["evaluation<br/>deterministic scoring / benchmark runner"]
-        Schemas["schemas<br/>Pydantic contracts"]
-        Registry["registry + pipeline<br/>JSON registry / orchestration"]
+    subgraph S3["03 · ANSWER"]
+      direction TB
+      Q1["Top 8 cosine hits"]:::stage
+      Q2{"provider"}:::input
+      Q3["Offline extractive<br/>term overlap"]:::stage
+      Q4["OpenAI-compatible<br/>or Anthropic JSON"]:::model
+      Q5["Drop claims whose<br/>chunk ids were not retrieved"]:::stage
+      Q1 --> Q2
+      Q2 -->|default| Q3
+      Q2 -->|key set| Q4 --> Q5
     end
 
-    subgraph Data["local artifacts"]
-        Raw["data/raw_docs"]
-        Parsed["data/parsed"]
-        Chunks["data/chunks"]
-        Results["results/run_001<br/>committed benchmark output"]
-        Questions["benchmark/questions + expected_*<br/>committed before results"]
-    end
-
-    Vector[("Qdrant Docker<br/>vectors + payload metadata")]
-
-    UI -->|HTTP JSON| API
-    API --> Core
-    Core --> Raw
-    Core --> Parsed
-    Core --> Chunks
-    Retrieval <--> Vector
-    Eval --> Results
-    Questions --> Eval
+    PDF --> S1 --> S2 --> S3
+    S3 --> R["Markdown + PDF report<br/>results/reports/"]:::output
+    S3 --> B["Benchmark run_001<br/>raw outputs kept"]:::output
 ```
 
+| Stage | Where | What it decides |
+| --- | --- | --- |
+| **Ingest** | `scripts/download_public_docs.py`, `POST /ingest` | A PDF lands in `data/raw_docs/`. The registry stores SHA-256, page count, and manifest domain. Uploads are capped at 60 MB. |
+| **Parse** | `HybridParser` (default), `BaselineParser`, `DoclingParser` | Docling elements are kept when the page is not weak. A page is weak when Baseline extracted something and Docling extracted nothing, or when Docling has no table, fewer than 40 non-table characters, and less text than Baseline. Baseline tables replace Docling tables when Docling has no table text, or when Baseline's table text is longer than 1.15× Docling's. Docling OCR is off. Both Docling paths convert in 8-page windows. |
+| **Chunk** | `packages/core/chunking/chunker.py` | ~700 tokens, ~120 overlap, page and section kept. A table stays one chunk when it fits. Chunks never combine across documents. |
+| **Index** | `Embedder`, `QdrantStore` | Local SentenceTransformers vectors plus payload metadata (filename, pages, section, parser, source URL). |
+| **Answer** | `packages/core/generation/qa.py` | Offline: abstain when there are no hits, the top cosine score is below 0.35, or no sentence shares terms with the question. Otherwise quote the highest-overlap sentences and cite that chunk. API mode asks for JSON, drops claims whose chunk ids were not retrieved, and falls back to the extractive answer on bad JSON or any exception. |
+| **Report** | `reporting/builder.py`, `renderer.py`, `pdf_renderer.py` | Four report types. Each runs four seed questions through the same QA path and writes Markdown and a reportlab PDF. |
+| **Benchmark** | `evaluation/benchmark.py` | Deterministic metrics over the fixed 30 questions. Abstentions and misses stay in the raw files. |
 
-### Layer responsibilities
+`PageElement.bbox` exists on the schema. No parser in this repo assigns it, and the UI does not read it.
 
-| Layer | What it owns | Why it matters |
-|---|---|---|
-| `apps/web` | Library, Q&A, Reports, and Benchmark pages | Human-facing workflow for ingesting, querying, reporting, and inspecting runs. |
-| `services/api` | `/ingest`, `/documents`, `/parse`, `/index`, `/search`, `/qa`, `/reports/generate`, `/benchmarks/*` | Thin HTTP boundary over the local document pipeline. |
-| `packages/core/parsers` | Hybrid default, Baseline `pdfplumber`, Docling, optional OCR adapters | Converts messy PDFs into structured page elements while preserving fallback coverage. |
-| `packages/core/chunking` | Token-aware, overlap-aware, page/section/table-preserving chunks | Keeps retrieval units audit-friendly and never crosses document boundaries. |
-| `packages/core/retrieval` | SentenceTransformers embeddings, Qdrant payloads, filters, search orchestration | Finds evidence with provenance attached. |
-| `packages/core/generation` | Offline extractive answers plus optional OpenAI/Anthropic adapter | Produces grounded answers and abstains when evidence is weak. |
-| `packages/core/reporting` | Report builder and Markdown renderer | Turns cited answers into an audit-ready report. |
-| `packages/core/evaluation` | Deterministic scoring and benchmark runner | Makes retrieval, abstention, and citation behavior reproducible. |
-| `packages/core/schemas` | Pydantic source-of-truth models | Enforces the grounding contract at construction time. |
-| `data/`, `benchmark/`, `results/` | Raw/parsed/chunk artifacts, fixed questions, committed run output | Preserves benchmark integrity: questions before results, raw outputs retained. |
+### Grounding
 
-**Grounding is structural, not aspirational:** `Claim` and `Answer` are Pydantic
-models that *reject* unsupported answers at construction time. A "supported"
-answer physically cannot be built without a citation that exists in the retrieved
-chunks.
+| Rule | Enforced by |
+| --- | --- |
+| A claim needs at least one citation or evidence id | `Claim` validator |
+| A `supported` answer needs at least one citation | `Answer` validator |
+| An `insufficient_evidence` answer has no claims | `Answer` validator |
+| Abstain text is fixed | `"Insufficient evidence in the reviewed documents."` |
+| Conflict flag | Schema value `conflicting_evidence`. The offline answerer never emits it. The API path keeps it only when the model JSON says so and at least one claim survives the chunk-id check. |
+| Retrieved chunks are stored on every answer | `Answer.retrieved_chunks` |
 
-## 5. Quickstart
+### Committed `run_001`
 
-Requirements: **Python 3.11 or 3.12** (Docling/torch wheels are not yet on 3.13+),
-Docker, Node 18+.
+Generated `2026-07-05T02:59:44+08:00` on Windows, Python 3.12.10, `llm_provider: offline`, `BAAI/bge-small-en-v1.5`, chunk 700/120, top_k 8, abstention threshold 0.35. Source: [`results/run_001/summary.md`](results/run_001/summary.md), [`run_config.yaml`](results/run_001/run_config.yaml), [`environment.txt`](results/run_001/environment.txt).
+
+| Metric | Value |
+| --- | ---: |
+| Questions | 30 |
+| hit_at_1 | 0.6333 |
+| recall_at_3 | 0.7667 |
+| recall_at_5 | 0.8 |
+| MRR | 0.7069 |
+| citation_page_match | 0.7333 |
+| abstention_correctness | 0.8333 |
+| insufficient_evidence answers | 0 |
+| unsupported_claim_total (proxy) | 0 |
+
+`citation_page_match` is document-level on this run. `citation_page_match` checks a page band only when both `expected_page_start` and `expected_page_end` are set. Every page cell in [`benchmark/questions.csv`](benchmark/questions.csv) and [`benchmark/expected_sources.csv`](benchmark/expected_sources.csv) is blank, so a citation to the expected filename scores 1.
+
+`unsupported_claim_total` is a proxy: a claim counts as unsupported when the first 60 normalised characters of `claim_text` do not appear in any retrieved chunk. It is not a judgement that the answer states the right fact.
+
+All 30 answers are `supported`. The five labelled `should_abstain` (Q001–Q005) are why abstention correctness is 0.8333 (25/30). The summary's other `hit_at_1 = 0` rows are Q009, Q019, and Q021–Q024. Raw rows are in [`results/run_001/raw_outputs.jsonl`](results/run_001/raw_outputs.jsonl), [`retrieved_chunks.jsonl`](results/run_001/retrieved_chunks.jsonl), and [`scores.csv`](results/run_001/scores.csv).
+
+Parser audit written with the same run, from `data/parsed/_parse_metrics.jsonl` on that machine (the jsonl is gitignored). `document_count` is the number of metric rows for that parser, which is higher than the nine manifest files:
+
+| Parser | Metric rows | Parse success | Empty-page rate | Seconds / page | Crashes |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| baseline | 36 | 1.0 | 0.0024 | 0.0761 | 0 |
+| docling | 30 | 1.0 | 0.8231 | 0.8764 | 0 |
+| hybrid | 39 | 1.0 | 0.0024 | 0.8275 | 0 |
+
+Manual columns in `scores.csv` and `parser_scores.csv` are blank. [`summary.md`](results/run_001/summary.md) still says manual scoring is to be filled. `scripts/apply_manual_scores.py` contains analyst judgements from an earlier `run_001` (summary dated 2026-07-04, before the hybrid result rewrite) and would stamp those numbers onto the current files. It does not re-score the current answers. `results/run_001/manual_scoring.md` is not in the tree.
+
+Question mix, committed in [`benchmark/questions.csv`](benchmark/questions.csv) and unchanged since `5c8e89c`:
+
+| Domain | Questions |
+| --- | ---: |
+| finance_regulatory | 8 |
+| insurance | 6 |
+| kyc | 6 |
+| financial_table | 5 |
+| abstention (all `should_abstain`) | 5 |
+
+History: `5c8e89c` (2026-07-04 03:19 +0800) adds the question set and scoring script. `565cffa` (03:37 +0800) adds the first results. `89839d1` later rewrites `results/run_001` in the same commit as the hybrid parser and PDF reports. The policy in [`benchmark/README.md`](benchmark/README.md) is still: do not edit questions after seeing results; a new set goes in a new directory and a new `results/run_*`. [`examples/demo_script.md`](examples/demo_script.md) tells a presenter to point at commit subjects `test: add fixed benchmark set and scoring script` and `eval: add first reproducible benchmark run`. Those subjects are not in `git log`. The commits above are.
+
+---
+
+<a id="the-demo"></a>
+
+## ▍The demo
+
+Nothing in the repo is a screenshot, Loom, or MP4. [`examples/demo_script.md`](examples/demo_script.md) is a five-minute presenter script. [`examples/sample_compliance_report.md`](examples/sample_compliance_report.md) is hand-authored to show the template. Its header says the figures were not extracted by a live run. A generated report is whatever `POST /reports/generate` writes under `results/reports/` (gitignored).
+
+With Qdrant, parse, and index already done, the app is four pages:
+
+| URL | Page | What you can do |
+| --- | --- | --- |
+| `http://localhost:3000/` | Document Library | List domain, parser, pages, status, SHA-256. Upload a PDF. Parse, index, or delete. |
+| `http://localhost:3000/qa` | Evidence Q&A | Ask a question. See `supported`, `insufficient_evidence`, or `conflicting_evidence`, citation cards, and the raw retrieved chunks. |
+| `http://localhost:3000/reports` | Report Builder | Generate one of the four briefs. Download the Markdown or the PDF. |
+| `http://localhost:3000/benchmark` | Benchmark | Run a `run_id`, inspect metric tiles, or delete a run. |
+
+The script's two spoken questions, both present as UI suggestions or benchmark items:
+
+1. "Who qualifies as a registrable controller?"
+2. "Under the EU General Data Protection Regulation (GDPR), what are the six lawful bases for processing personal data?" — labelled abstain. The committed offline run answered it as `supported` (Q001).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor A as Analyst
+    participant W as Next.js :3000
+    participant API as FastAPI :8000
+    participant C as packages/core
+    participant Q as Qdrant :6333
+
+    A->>W: Library → Parse documents
+    W->>API: POST /parse {parser: hybrid}
+    API->>C: Docling windows + pdfplumber, merge per page
+    A->>W: Index
+    W->>API: POST /index
+    API->>C: embed chunks
+    C->>Q: upsert evidenceos_chunks
+    A->>W: Evidence Q&A
+    W->>API: POST /qa
+    API->>Q: top 8
+    API->>C: extractive answer or abstain
+    API-->>W: Answer + citations + retrieved_chunks
+    A->>W: Report Builder → Generate
+    W->>API: POST /reports/generate
+    API-->>W: Markdown + PDF url
+```
+
+API docs: `http://localhost:8000/docs`. Health: `GET /health`.
+
+---
+
+## ▍Run it
+
+Requirements: Python 3.11 or 3.12 (`.python-version` pins 3.11; `requires-python` is `>=3.11`; [`docs/OPERATIONS.md`](docs/OPERATIONS.md) says to avoid 3.13+ because Docling and torch wheels may be missing), Docker, and Node.js for the Next.js 14.2 app in `apps/web`.
 
 ```bash
 cp .env.example .env
-docker compose up -d qdrant
+docker compose up -d qdrant          # qdrant/qdrant:v1.12.4 → :6333 REST, :6334 gRPC
 python -m venv .venv
-# Windows PowerShell:  .venv\Scripts\Activate.ps1
-# macOS/Linux:         source .venv/bin/activate
+source .venv/bin/activate            # Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install -r services/api/requirements.txt
-pip install -e .            # makes packages.core / services importable
+pip install -e .                     # packages.core and services importable
 ```
-
-## 6. Download the public docs
 
 ```bash
 python scripts/download_public_docs.py
+python scripts/parse_docs.py --parser hybrid
+python scripts/index_docs.py --parser hybrid
+
+# diagnostics, same chunk files, different parser name
+python scripts/parse_docs.py --parser baseline
+python scripts/parse_docs.py --parser docling
 ```
 
-Downloads the 9 public PDFs into `data/raw_docs/`. **Note:** the ACRA document is
-a landing page, not a direct PDF ? fetch "Guidance on Register of Controllers for
-Companies" v2 (16 Jun 2025) manually and place it as
-`data/raw_docs/acra-registrable-controllers-guidance-2025.pdf`. See
-`docs/OPERATIONS.md`.
-
-## 7. Parse and index
+The first Docling parse and the first index download model weights into the local cache (`models/` by default, gitignored). `parse_docs.py --parser` accepts `baseline`, `docling`, `hybrid`. `index_docs.py --parser` also accepts `ocr` and `any`. The OCR adapter is optional: `pytesseract` and `pdf2image` are commented out in `services/api/requirements.txt`, and a Tesseract binary has to be on `PATH`. The download script and the OCR parser mention `MANUAL_TASKS.md`; that file is gitignored and is not in the tree.
 
 ```bash
-python scripts/parse_docs.py --parser hybrid      # default: Docling structure + Baseline fallback
-python scripts/index_docs.py --parser hybrid      # embed + upsert into Qdrant
-
-# Optional diagnostics/comparison:
-python scripts/parse_docs.py --parser baseline    # fast pdfplumber baseline
-python scripts/parse_docs.py --parser docling      # raw Docling structured parser
+uvicorn services.api.main:app --reload          # http://localhost:8000
+cd apps/web && npm install && npm run dev       # http://localhost:3000
 ```
 
-The first Hybrid/Docling run may download layout/OCR models (~hundreds of MB);
-the first index run downloads the `bge-small` embedding model (~130 MB). Both
-cache locally. Hybrid also guards against Docling page-level failures such as
-`std::bad_alloc` by backfilling weak/empty pages with Baseline output.
+Other web scripts in `apps/web/package.json`: `npm run build`, `npm run start`, `npm run lint`. The frontend reads `NEXT_PUBLIC_API_URL` (see `apps/web/.env.local.example`, default `http://localhost:8000`). CORS allows `localhost:3000`, `127.0.0.1:3000`, and `localhost:3001`.
 
-## 8. Run the app
+| URL | What |
+| --- | --- |
+| `http://localhost:3000/` | Library, Q&A, reports, benchmark |
+| `http://localhost:8000/docs` | OpenAPI |
+| `http://localhost:8000/health` | `{"status":"ok"}` |
+| `http://localhost:6333/collections` | Qdrant is up |
 
-Backend:
+**No key needed.** `Settings.effective_llm_provider` is `offline` when `LLM_PROVIDER=offline`, when `FORCE_OFFLINE=true`, or when `openai` / `anthropic` is selected and `LLM_API_KEY` is empty. The benchmark runner uses that same path.
+
+`Settings` loads uppercase field names (`env_prefix=""`). These are the names it reads:
 
 ```bash
-uvicorn services.api.main:app --reload
-# API at http://localhost:8000  ?  docs at /docs
+TIMEZONE=Asia/Singapore
+QDRANT_URL=http://localhost:6333
+QDRANT_API_KEY=
+QDRANT_COLLECTION=evidenceos_chunks
+EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
+EMBEDDING_DIM=384
+MODEL_CACHE_DIR=
+CHUNK_SIZE=700
+CHUNK_OVERLAP=120
+TOP_K=8
+ABSTENTION_THRESHOLD=0.35
+LLM_PROVIDER=offline          # offline | openai | anthropic
+LLM_MODEL=gpt-4o-mini
+LLM_API_KEY=
+LLM_BASE_URL=                 # OpenAI-compatible base, for example http://localhost:11434/v1
+LLM_TEMPERATURE=0.0
+FORCE_OFFLINE=false
+REPO_ROOT=
 ```
 
-Frontend (separate shell):
+`EOS_LOG_LEVEL` is read directly by `packages/core/utils/logging.py` (default `INFO`). `.env.example` prefixes the non-Qdrant keys with `EOS_` (`EOS_LLM_API_KEY`, `EOS_FORCE_OFFLINE`, and the rest). Those prefixed names are not bound. `QDRANT_URL`, `QDRANT_API_KEY`, and `QDRANT_COLLECTION` match the example file and the model. Defaults are enough to run offline if you never set a provider.
 
-```bash
-cd apps/web
-npm install
-npm run dev        # http://localhost:3000
-```
+Leave `LLM_API_KEY` empty in the repo. A non-default `LLM_BASE_URL` receives the bearer token; the adapter logs a warning when that host is not `openai.com`.
 
-## 9. Generate a report
+### Corpus
 
-From the UI (**Report Builder**) or:
+`python scripts/download_public_docs.py` reads [`manifests/public_docs.csv`](manifests/public_docs.csv) (nine rows), checks the `%PDF` magic bytes, and writes `data/raw_docs/_download_report.csv`. Flags: `--only <filename>`, `--force`.
+
+| File | Domain | Type |
+| --- | --- | --- |
+| `mas-trm-guidelines-2021.pdf` | finance_regulatory | regulatory guideline |
+| `mas-notice-sfa04-n02-2025.pdf` | finance_regulatory | regulatory notice |
+| `guidelines-to-mas-notice-626-2025.pdf` | finance_regulatory | regulatory guidance |
+| `acra-registrable-controllers-guidance-2025.pdf` | kyc | guidance |
+| `dbs-annual-report-2025.pdf` | finance | annual report |
+| `ocbc-annual-report-2025.pdf` | finance | annual report |
+| `uob-annual-report-2025.pdf` | finance | annual report |
+| `nfip-claims-manual-june-2025.pdf` | insurance | claims manual |
+| `sfip-commentary-june-2025.pdf` | insurance | policy commentary |
+
+The ACRA row is a landing page, not a direct PDF. The manifest says to fetch "Guidance on Register of Controllers for Companies" v2 (16 Jun 2025) and save it as `data/raw_docs/acra-registrable-controllers-guidance-2025.pdf`. `data/raw_docs/`, `data/parsed/`, and `data/chunks/` are gitignored apart from `.gitkeep` files.
+
+### Report and benchmark
 
 ```bash
 curl -X POST http://localhost:8000/reports/generate \
@@ -185,127 +286,111 @@ curl -X POST http://localhost:8000/reports/generate \
   -d '{"report_type":"general_compliance_intelligence"}'
 ```
 
-Reports are written to `results/reports/`. A hand-authored sample lives at
-`examples/sample_compliance_report.md`.
-
-## 10. Run the benchmark
+`report_type` is one of `general_compliance_intelligence`, `kyc_beneficial_ownership`, `technology_risk_compliance`, `insurance_claims_review`. The response includes `markdown`, `pdf_path`, and `pdf_url` (`GET /reports/{report_id}/download`). Report ids look like `CIR-…`.
 
 ```bash
 python scripts/run_benchmark.py --run-id run_001
 cat results/run_001/summary.md
 ```
 
-The benchmark works **offline** (no API key), so the run is deterministic and
-reproducible.
+That command overwrites `results/run_001/` (summary, scores, parser scores, raw outputs, retrieved chunks, environment, run config). Questions stay where they are.
 
-## 11. Benchmark integrity
+### Tests
 
-> **Benchmark integrity:** the benchmark questions, expected answers, expected
-> sources, and scoring script were committed **before** running the test. Results
-> were committed separately. Raw retrieved chunks and raw model outputs are
-> included so the run can be inspected or rerun locally.
+`pytest` is not pinned in `services/api/requirements.txt`.
 
-Enforced by a two-commit rule (see `benchmark/README.md`):
+```bash
+pip install pytest
+pytest -q
+```
 
-- **Commit 1** ? the fixed set + scoring script (`test: add fixed benchmark set`).
-- **Commit 2** ? the results only (`eval: add first reproducible benchmark run`).
-
-Questions are never edited after results are seen; changes go into a new
-`benchmark_v2/` ? `results/run_002/`.
-
-## 12. Result summary
-
-`results/run_001/summary.md` was generated on 2026-07-04 with deterministic
-offline extractive grounding:
-
-| Metric | Value |
-|---|---:|
-| Questions | 30 |
-| hit_at_1 | 0.6000 |
-| recall_at_3 | 0.7333 |
-| recall_at_5 | 0.7667 |
-| MRR | 0.6750 |
-| citation_page_match | 0.7000 |
-| abstention_correctness | 0.8667 |
-| insufficient_evidence answers | 1 |
-| unsupported_claim_total (proxy) | 0 |
-
-Manual (analyst-filled, see `results/run_001/manual_scoring.md`):
-
-| Metric | Value |
-|---|---:|
-| manual_answer_correctness (0/0.5/1) | 0.217 |
-| manual_citation_support (0/0.5/1) | 1.000 |
-| baseline: manual_table_score / reading_order (0?2) | 1 / 1 |
-| docling: manual_table_score / reading_order (0?2) | 2 / 2 |
-| hybrid: manual_table_score / reading_order (0-2) | 2 / 2 |
-
-The low answer-correctness is the honest cost of the offline extractive default:
-it cannot synthesise figures or recombine evidence, so specific-figure and
-financial-table questions score 0 even when retrieval surfaces the right
-document. Citation support is a perfect 1.0 ? every supported answer is a
-verbatim quote from its cited chunk, so nothing is fabricated. Re-runnable via
-`python scripts/apply_manual_scores.py`.
-
-## 13. Failure analysis
-
-Failures are surfaced, not hidden:
-
-- `results/run_001/raw_outputs.jsonl` - every answer, including abstentions.
-- `results/run_001/retrieved_chunks.jsonl` - what was retrieved per question.
-- `results/run_001/scores.csv` - per-question deterministic metrics plus analyst-filled manual scoring columns.
-- `summary.md` lists top retrieval/abstention failures.
-
-Known failure modes to expect (honest design limits): dense-only retrieval (no
-BM25 rerank) can miss keyword-specific queries; the offline extractor can only
-cite sentences that share terms with the question; raw Baseline/Docling outputs
-can still be compared, while Hybrid is the default path for resilient demos.
-
-## 14. Limitations
-
-- Dense embeddings only (no hybrid/BM25 rerank yet - scaffolded in config).
-- Page numbers in `expected_sources.csv` are intentionally blank; they are filled
-  after parsing (manual or via a future auto-fill step).
-- Manual metrics (`manual_answer_correctness`, `manual_citation_support`,
-  `manual_table_score`, `manual_reading_order_score`) require human judgement.
-  For `run_001` they have been analyst-filled in `results/run_001/manual_scoring.md`;
-  future runs should keep them blank until reviewed.
-- Docling's API changes between versions. Raw Docling diagnostics should be
-  re-validated against your installed Docling version; the default Hybrid path
-  backfills weak/failed Docling pages with Baseline output.
-- No auth, no multi-tenancy, no production deployment - by design.
-
-## 15. What I would improve next
-
-- **Hybrid retrieval**: add BM25 + dense fusion and a cross-encoder reranker
-  (the config + filter plumbing already exist).
-- **Bounding-box provenance to the UI**: surface `bbox` on citations and render
-  the highlighted source region (Docling already provides it).
-- **A real LLM-judge lane**: wire Ragas/DeepEval behind the existing optional
-  metrics, keeping deterministic metrics as the always-on baseline.
-- **Page-band auto-fill**: post-parse, map each expected evidence snippet to its
-  page so `citation_page_match` is computed automatically.
-- **Cross-document entity linking** for KYC (controller <-> company <-> filings).
-- **Table-structure scoring** automated against a DocLayNet sample.
+`tests/` has 46 `test_*` functions: schemas and grounding, chunking, hybrid and Docling parser behaviour, offline and API-path QA, scoring, hashing, Qdrant search shape, report PDF bytes, document delete, benchmark delete. This README does not claim a current pass/fail; there is no CI config in the repo.
 
 ---
 
-## Repo layout
+## ▍Repository map
 
 ```text
-packages/core/   parsers ? chunking ? retrieval ? generation ? reporting ? evaluation ? schemas ? registry ? pipeline
-services/api/    FastAPI app + routes (documents ? qa ? reports ? benchmarks)
-apps/web/        Next.js (Library ? Q&A ? Reports ? Benchmark)
-scripts/         download_public_docs ? parse_docs ? index_docs ? run_benchmark
-manifests/       public_docs.csv
-benchmark/       questions ? expected_answers ? expected_sources ? scoring_config ? README
-data/            raw_docs ? parsed ? chunks (gitignored, regenerable)
-results/         run_001/* (committed) ? reports/
-docs/            operations runbook
-examples/        sample_compliance_report ? demo_script ? technical_memo
-tests/           behaviour suite (pytest)
+Mini-Doc/
+├── packages/core/
+│   ├── parsers/          hybrid (default), baseline, docling, optional ocr
+│   ├── chunking/         token, page, section, table
+│   ├── retrieval/        SentenceTransformers, Qdrant, retriever
+│   ├── generation/       offline extractive + OpenAI-compatible / Anthropic
+│   ├── reporting/        seed-prompt builder, Markdown, reportlab PDF
+│   ├── evaluation/       pure metrics + benchmark runner
+│   ├── schemas/          Pydantic contracts
+│   ├── config.py         Settings
+│   ├── pipeline.py       parse → persist → chunk, shared by CLI and API
+│   └── registry.py       data/registry.json
+├── services/api/         FastAPI: documents, qa, reports, benchmarks
+├── apps/web/             Next.js: /, /qa, /reports, /benchmark
+├── scripts/              download, parse, index, run_benchmark, apply_manual_scores
+├── manifests/            public_docs.csv
+├── benchmark/            questions, expected answers/sources, scoring_config
+├── results/run_001/      committed offline run (reports/ and later runs are gitignored)
+├── docs/OPERATIONS.md    local runbook
+├── examples/             demo script, hand-authored sample report, technical memo
+├── tests/                pytest behaviour suite
+├── skills/               checked-in agent skill notes; the app does not import them
+├── docker-compose.yml    Qdrant only
+├── pyproject.toml        package metadata, pytest/ruff/black config
+└── AGENTS.md             module map for people working in the repo
 ```
 
-## License
+| Doc | |
+| --- | --- |
+| [docs/OPERATIONS.md](docs/OPERATIONS.md) | Install, Qdrant, parse, index, benchmark, smoke checks |
+| [benchmark/README.md](benchmark/README.md) | Fixed-set contract and the two-commit rule |
+| [examples/demo_script.md](examples/demo_script.md) | Five-minute presenter script |
+| [examples/sample_compliance_report.md](examples/sample_compliance_report.md) | Hand-authored report template |
+| [examples/technical_memo.md](examples/technical_memo.md) | Build notes. A few lines describe files and scores that the current `results/run_001` no longer contains |
+| [AGENTS.md](AGENTS.md) | Import rules, grounding rules, extension points |
 
-MIT. Public demo data only ? not legal, financial, insurance, or regulatory advice.
+There is no Makefile. Data and model weights are produced by the scripts above.
+
+### Not built
+
+Listed because the current code and the older README both name them. None of these are implemented:
+
+- BM25 or a cross-encoder. Retrieval is dense cosine plus optional payload filters. `ReportConfig.reranking` is the string `"none (dense only)"`.
+- Drawing `bbox` highlights in the UI.
+- Ragas or DeepEval. Both are commented out in `services/api/requirements.txt`. `scoring_config.yaml` lists `faithfulness`, `contextual_relevancy`, and `answer_relevancy` as optional and they are not computed.
+- Filling expected page bands after parse.
+- Cross-document entity linking.
+- An automated table-structure score against an external dataset.
+
+---
+
+## ▍What this is, and isn't
+
+- A local single-user demo. No authentication, no tenancy, no deployment target.
+- Public PDFs listed in the manifest, plus whatever you upload. The sample report is hand-written.
+- Offline answers are sentences copied from retrieved chunks, chosen by term overlap. They do not recompute a figure or join two passages into a new sentence. The committed run's manual columns are empty for that reason: a human still has to say whether the quoted sentence answered the question.
+- Abstention is implemented and unit-tested. On the committed offline run it did not fire: zero `insufficient_evidence` answers, including the five questions labelled to abstain.
+- `unsupported_claim_total: 0` means those quotes occur inside the cited chunks. It does not mean the quotes are the right facts.
+- On the committed parser audit, Docling's empty-page rate is 0.8231 with OCR disabled. Hybrid's is 0.0024, the same figure as Baseline. The hybrid merger replaces a weak Docling page with the Baseline page.
+- Docling's Python API moves between releases. The hybrid path is the one the app and the CLI default to. Re-check a raw Docling diagnostic against the Docling version you have installed (`environment.txt` records `docling==2.109.0` for `run_001`).
+- The API LLM path can flag `conflicting_evidence`. The offline path cannot.
+
+---
+
+## ▍Credits
+
+| | |
+| --- | --- |
+| Layout and tables | [Docling](https://github.com/DS4SD/docling) (OCR off in this repo) and [pdfplumber](https://github.com/jsvine/pdfplumber) |
+| Embeddings | [SentenceTransformers](https://www.sbert.net/) · [BAAI/bge-small-en-v1.5](https://huggingface.co/BAAI/bge-small-en-v1.5) |
+| Vector store | [Qdrant](https://github.com/qdrant/qdrant) `v1.12.4` |
+| API and models | [FastAPI](https://fastapi.tiangolo.com/), [Pydantic](https://docs.pydantic.dev/) v2 |
+| UI | [Next.js](https://nextjs.org/) 14.2, React 18, Tailwind 3 |
+| PDF reports | [reportlab](https://www.reportlab.com/) |
+| Token counts | [tiktoken](https://github.com/openai/tiktoken) `cl100k_base`, with a 4-character heuristic if the import fails |
+| HTTP | [httpx](https://www.python-httpx.org/) for the optional LLM calls |
+| Corpus | URLs in [`manifests/public_docs.csv`](manifests/public_docs.csv): MAS, ACRA, DBS, OCBC, UOB, FEMA NFIP. Those PDFs are not vendored. |
+
+`pyproject.toml` declares MIT. There is no separate `LICENSE` file in the tree. The web footer and the sample report both say the same thing: public demo data only, not legal, financial, insurance, or regulatory advice.
+
+<p align="center">
+  <sub>Local Qdrant, local embeddings, offline answers. A key is only for a provider you turn on yourself.</sub>
+</p>
