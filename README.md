@@ -20,6 +20,16 @@ No logo or screenshots are committed in this repository. The walkthrough is a sc
 
 ---
 
+
+## ▍Project gallery
+
+<table><tr>
+<td width="50%"><img src="https://raw.githubusercontent.com/bede-lau/bede-lau.github.io/main/assets/img/mini_doc/doc1.png" alt="Mini-Doc project screenshot, first view" /></td>
+<td width="50%"><img src="https://raw.githubusercontent.com/bede-lau/bede-lau.github.io/main/assets/img/mini_doc/doc2.png" alt="Mini-Doc project screenshot, second view" /></td>
+</tr></table>
+
+<sub>Images from the [project portfolio](https://bede-lau.github.io/); they may depict an earlier build.</sub>
+
 ## ▍The problem
 
 Regulated document work fails when an answer is fluent and untraceable. An analyst has to ingest messy PDFs, keep section and table structure, tie every fact to a filename and a page, separate a quote from an inference, stop when the corpus does not cover the question, and hand an auditor a report they can re-read.
