@@ -1,6 +1,16 @@
 <h1 align="center">Mini-Doc</h1>
 <p align="center"><b>Document intelligence with page-level citations, abstention and reproducible evaluation.</b></p>
 
+## ▍Project gallery
+
+<table><tr>
+<td width="50%"><img src="https://raw.githubusercontent.com/bede-lau/bede-lau.github.io/main/assets/img/mini_doc/doc1.png" alt="Mini-Doc project screenshot, first view" /></td>
+<td width="50%"><img src="https://raw.githubusercontent.com/bede-lau/bede-lau.github.io/main/assets/img/mini_doc/doc2.png" alt="Mini-Doc project screenshot, second view" /></td>
+</tr></table>
+
+<sub>Images from the [project portfolio](https://bede-lau.github.io/); they may depict an earlier build.</sub>
+
+
 ## ▍At a glance
 
 ```mermaid
